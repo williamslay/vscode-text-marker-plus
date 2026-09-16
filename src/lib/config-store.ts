@@ -6,6 +6,8 @@ import ConfigurationTargetPicker from './config-target-picker';
 import * as Const from './const';
 import {Highlight} from './entities/highlight';
 
+export type SaveTarget = 'workspace' | 'global' | 'prompt';
+
 export default class ConfigStore {
     private readonly workspace: typeof vscode.workspace;
     private readonly configTargetPicker: ConfigurationTargetPicker;
@@ -19,8 +21,12 @@ export default class ConfigStore {
         return this.get<string[]>('highlightColors');
     }
 
-    get defaultHighlightColor() {
-        return this.get<string>('defaultHighlightColor');
+    get userColor() {
+        return this.get<string[]>('userColor');
+    }
+
+    get useUserColor() {
+        return this.get<boolean>('useUserColor');
     }
 
     get defaultHighlightOpacity() {
@@ -55,6 +61,14 @@ export default class ConfigStore {
         return this.get<boolean>('hideStatusBarItems');
     }
 
+    get defaultSaveTarget() {
+        return this.get<SaveTarget>('defaultSaveTarget');
+    }
+
+    get autoSaveOnToggle() {
+        return this.get<boolean>('autoSaveOnToggle');
+    }
+
     private get<T>(configName: string) {
         const extensionConfig = this.workspace.getConfiguration(Const.EXTENSION_ID);
         return extensionConfig.get(configName) as T;
@@ -62,9 +76,23 @@ export default class ConfigStore {
 
     // TODO: Move this to WorkspaceAdaptor
     set(configName: string, configValue: any): Task<O.Option<never>> {
-        return getOptionM(task).chain(this.configTargetPicker.pick(), target => {
+        return getOptionM(task).chain(this.resolveSaveTarget(), target => {
             const extensionConfig = this.workspace.getConfiguration(Const.EXTENSION_ID);
             return () => extensionConfig.update(configName, configValue, target) as Promise<O.Option<never>>;
         });
+    }
+
+    private resolveSaveTarget(): Task<O.Option<vscode.ConfigurationTarget>> {
+        switch (this.defaultSaveTarget) {
+            case 'global':
+                return task.of(O.some(vscode.ConfigurationTarget.Global));
+            case 'workspace':
+                return this.workspace.workspaceFolders && this.workspace.workspaceFolders.length > 0 ?
+                    task.of(O.some(vscode.ConfigurationTarget.Workspace)) :
+                    this.configTargetPicker.pick();
+            case 'prompt':
+            default:
+                return this.configTargetPicker.pick();
+        }
     }
 }
