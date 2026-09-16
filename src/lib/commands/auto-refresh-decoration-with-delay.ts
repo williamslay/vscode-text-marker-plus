@@ -23,9 +23,17 @@ export default class AutoRefreshDecorationWithDelay implements CommandLike {
 
     execute() {
         const editor = this.windowComponent.activeTextEditor;
+        if (editor) {
+            try {
+                this.refreshNearby(editor);
+            } catch (e) {
+                this.logger.error(e.stack);
+            }
+        }
         this.debouncer.debounce(() => {
             try {
-                if (editor) this.refresh(editor);
+                const currentEditor = this.windowComponent.activeTextEditor;
+                if (currentEditor) this.refresh(currentEditor);
             } catch (e) {
                 this.logger.error(e.stack);
             }
@@ -33,8 +41,13 @@ export default class AutoRefreshDecorationWithDelay implements CommandLike {
     }
 
     private refresh(editor: TextEditor) {
-        const decorationOperator = this.decorationOperatorFactory.create([editor]);
+        const decorationOperator = this.decorationOperatorFactory.createForVisibleEditors();
         decorationOperator.refreshDecorations();
+    }
+
+    private refreshNearby(editor: TextEditor) {
+        const decorationOperator = this.decorationOperatorFactory.create([editor]);
+        decorationOperator.refreshNearbyDecorations();
     }
 
 }

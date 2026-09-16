@@ -17,6 +17,7 @@ suite('AutoRefreshDecorationWithDelay', () => {
         const decorationOperator = mock(DecorationOperator);
         const decorationOperatorFactory = mock(DecorationOperatorFactory);
         when(decorationOperatorFactory.create([editor])).thenReturn(decorationOperator);
+        when(decorationOperatorFactory.createForVisibleEditors()).thenReturn(decorationOperator);
         const debouncer = mock(Debouncer);
         when(debouncer.debounce(callback)).thenCallback();
         const refresher = new AutoRefreshDecorationWithDelay(decorationOperatorFactory, debouncer, windowComponent, logger);
