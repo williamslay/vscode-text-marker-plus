@@ -1,13 +1,13 @@
 import TextEditor from '../../../lib/vscode/text-editor';
 import {Position, Range, Selection, TextDocument, TextEditor as VsTextEditor, TextEditorRevealType} from 'vscode';
-import {mockMethods, verify, when} from '../../helpers/mock';
+import {mockMethods, mockType, verify, when} from '../../helpers/mock';
 import * as assert from 'assert';
 
 suite('TextEditor', () => {
     const position1 = position(0, 0);
     const position2 = position(0, 5);
 
-    const document = mockMethods<TextDocument>(['positionAt']);
+    const document = mockMethods<TextDocument>(['positionAt', 'getText', 'offsetAt']);
     when(document.positionAt(0)).thenReturn(position1);
     when(document.positionAt(5)).thenReturn(position2);
 
@@ -19,6 +19,21 @@ suite('TextEditor', () => {
         editor.selection = {start: 0, end: 5};
         assert.deepEqual(rawEditor.selection, selection(position1, position2));
         verify(rawEditor.revealRange(range(position1, position2), TextEditorRevealType.InCenterIfOutsideViewport));
+    });
+
+    test('returns nearby text with its document offset', () => {
+        const nearbyDocument = mockType<TextDocument>({
+            lineCount: 3,
+            lineAt: () => ({text: 'VISIBLE'}),
+            getText: () => 'VISIBLE\nVISIBLE\nVISIBLE',
+            offsetAt: () => 100
+        });
+        const visibleEditor = mockMethods<VsTextEditor>([], {
+            selection: {active: position(1, 2)},
+            document: nearbyDocument
+        });
+
+        assert.deepEqual(new TextEditor(visibleEditor).nearbyTexts, [{text: 'VISIBLE\nVISIBLE\nVISIBLE', offset: 100}]);
     });
 
     function position(line: number, character: number): Position {
