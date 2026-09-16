@@ -1,0 +1,12 @@
+trigger: none
+
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - script: |
+      node --version
+      npm --version
+    displayName: 'Check build environment'
