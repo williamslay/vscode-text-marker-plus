@@ -25,12 +25,51 @@ suite('ColourRegistry', () => {
 
             assert.deepEqual(colourRegistry.issue(), 'COLOUR_1');
         });
+
+        test('it cycles through configured colors after all colors are used', () => {
+            const configStore = mockType<ConfigStore>({
+                highlightColors: ['COLOUR_1'],
+                userColor: ['COLOUR_2', 'COLOUR_3'],
+                useUserColor: true
+            });
+            const registry = new ColourRegistry(configStore);
+
+            assert.deepEqual(registry.issue(), 'COLOUR_1');
+            assert.deepEqual(registry.issue(), 'COLOUR_2');
+            assert.deepEqual(registry.issue(), 'COLOUR_3');
+            assert.deepEqual(registry.issue(), 'COLOUR_1');
+            assert.deepEqual(registry.issue(), 'COLOUR_2');
+        });
+
+        test('it ignores user colors when the switch is disabled', () => {
+            const configStore = mockType<ConfigStore>({
+                highlightColors: ['COLOUR_1'],
+                userColor: ['USER_COLOUR'],
+                useUserColor: false
+            });
+            const registry = new ColourRegistry(configStore);
+
+            assert.deepEqual(registry.issue(), 'COLOUR_1');
+            assert.deepEqual(registry.issue(), 'COLOUR_1');
+        });
+
+        test('it skips missing user colors when the switch is enabled', () => {
+            const configStore = mockType<ConfigStore>({
+                highlightColors: ['COLOUR_1'],
+                useUserColor: true
+            });
+            const registry = new ColourRegistry(configStore);
+
+            assert.deepEqual(registry.issue(), 'COLOUR_1');
+            assert.deepEqual(registry.issue(), 'COLOUR_1');
+        });
     });
 
     suite('When no colours are left unused', () => {
         const configStore = mockType<ConfigStore>({
             highlightColors: [],
-            defaultHighlightColor: 'DEFAULT_COLOUR'
+            userColor: ['DEFAULT_COLOUR'],
+            useUserColor: true
         });
         const colourRegistry = new ColourRegistry(configStore);
 
