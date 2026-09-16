@@ -9,8 +9,12 @@ import WindowComponent from '../../../lib/vscode/window';
 import StringPattern from '../../../lib/pattern/string';
 import {Decoration} from '../../../lib/entities/decoration';
 import {TextEditorDecorationType} from 'vscode';
+import * as vscode from 'vscode';
 import {none, some} from 'fp-ts/lib/Option';
 import {DecorationTypeRegistry} from '../../../lib/decoration/decoration-type-registry';
+import ConfigStore from '../../../lib/config-store';
+import SaveAllHighlightsCommand from '../../../lib/commands/save-all-highlights';
+import {task} from 'fp-ts/lib/Task';
 
 suite('ToggleHighlightCommand', () => {
 
@@ -100,5 +104,149 @@ suite('ToggleHighlightCommand', () => {
             verify(editor.setDecorations(any(), any()), {times: 0});
             verify(editor.unsetDecorations(any()), {times: 0});
         });
+    });
+
+    suite('When auto-save is enabled', () => {
+        test('it saves after adding a highlight', async () => {
+            const editor = mockMethods<TextEditor>(['setDecorations'], {
+                id: 'EDITOR_ID',
+                selectedText: 'SELECTED',
+                selection: unregisteredRange,
+                wholeText: 'abc SELECTED def'
+            });
+            const registry = new TextLocationRegistry();
+            const configStore = mockType<ConfigStore>({autoSaveOnToggle: true});
+            const saveCommand = mock(SaveAllHighlightsCommand);
+            when(saveCommand.execute()).thenReturn(Promise.resolve(none));
+            const command = new ToggleHighlightCommand(
+                matchingModeRegistry,
+                registry,
+                decorationRegistry,
+                decorationTypeRegistry,
+                mockType<WindowComponent>({visibleTextEditors: [editor]}),
+                configStore,
+                saveCommand
+            );
+
+            await command.execute(editor);
+
+            verify(saveCommand.execute());
+        });
+
+        test('it saves after removing a highlight', async () => {
+            const editor = mockMethods<TextEditor>(['unsetDecorations'], {
+                id: 'EDITOR_ID',
+                selectedText: 'SELECTED_KNOWN',
+                selection: registeredRange,
+                wholeText: 'abc SELECTED_KNOWN def'
+            });
+            const registry = new TextLocationRegistry();
+            registry.register('EDITOR_ID', 'DECORATION_ID', [registeredRange]);
+            const configStore = mockType<ConfigStore>({autoSaveOnToggle: true});
+            const saveCommand = mock(SaveAllHighlightsCommand);
+            when(saveCommand.execute()).thenReturn(Promise.resolve(none));
+            const command = new ToggleHighlightCommand(
+                matchingModeRegistry,
+                registry,
+                decorationRegistry,
+                decorationTypeRegistry,
+                mockType<WindowComponent>({visibleTextEditors: [editor]}),
+                configStore,
+                saveCommand
+            );
+
+            await command.execute(editor);
+
+            verify(saveCommand.execute());
+        });
+
+        test('it reports save failure without undoing toggle', async () => {
+            const editor = mockMethods<TextEditor>(['setDecorations'], {
+                id: 'EDITOR_ID',
+                selectedText: 'SELECTED',
+                selection: unregisteredRange,
+                wholeText: 'abc SELECTED def'
+            });
+            const registry = new TextLocationRegistry();
+            const configStore = mockType<ConfigStore>({autoSaveOnToggle: true});
+            const saveCommand = mock(SaveAllHighlightsCommand);
+            when(saveCommand.execute()).thenReturn(Promise.reject(new Error('save failed')));
+            const windowComponent = mockMethods<WindowComponent>(['showErrorMessage'], {
+                visibleTextEditors: [editor]
+            });
+            when(windowComponent.showErrorMessage('Failed to save highlights: save failed')).thenReturn(task.of('OK'));
+            const command = new ToggleHighlightCommand(
+                matchingModeRegistry,
+                registry,
+                decorationRegistry,
+                decorationTypeRegistry,
+                windowComponent,
+                configStore,
+                saveCommand
+            );
+
+            await command.execute(editor);
+
+            verify(editor.setDecorations(decorationType, [{start: 4, end: 12}]));
+            verify(windowComponent.showErrorMessage('Failed to save highlights: save failed'));
+        });
+    });
+
+    test('it does not save when auto-save is disabled', async () => {
+        const editor = mockMethods<TextEditor>(['setDecorations'], {
+            id: 'EDITOR_ID',
+            selectedText: 'SELECTED',
+            selection: unregisteredRange,
+            wholeText: 'abc SELECTED def'
+        });
+        const registry = new TextLocationRegistry();
+        const configStore = mockType<ConfigStore>({autoSaveOnToggle: false});
+        const saveCommand = mock(SaveAllHighlightsCommand);
+        const command = new ToggleHighlightCommand(
+            matchingModeRegistry,
+            registry,
+            decorationRegistry,
+            decorationTypeRegistry,
+            mockType<WindowComponent>({visibleTextEditors: [editor]}),
+            configStore,
+            saveCommand
+        );
+
+        await command.execute(editor);
+
+        verify(saveCommand.execute(), {times: 0});
+    });
+
+    test('it saves to workspace without prompting when auto-save is enabled', async () => {
+        const editor = mockMethods<TextEditor>(['setDecorations'], {
+            id: 'EDITOR_ID',
+            selectedText: 'SELECTED',
+            selection: unregisteredRange,
+            wholeText: 'abc SELECTED def'
+        });
+        const registry = new TextLocationRegistry();
+        const extensionConfig = mockMethods<any>(['get', 'update']);
+        when(extensionConfig.get('defaultSaveTarget')).thenReturn('workspace');
+        when(extensionConfig.get('autoSaveOnToggle')).thenReturn(true);
+        const workspace = mockMethods<any>(['getConfiguration'], {workspaceFolders: [{}]});
+        when(workspace.getConfiguration('textmarker')).thenReturn(extensionConfig);
+        const configTargetPicker = mockMethods<any>(['pick']);
+        const configStore = new ConfigStore(workspace, configTargetPicker);
+        const saveCommand = new SaveAllHighlightsCommand(configStore, decorationRegistry);
+        when(decorationRegistry.retrieveAll()).thenReturn([]);
+        const command = new ToggleHighlightCommand(
+            matchingModeRegistry,
+            registry,
+            decorationRegistry,
+            decorationTypeRegistry,
+            mockType<WindowComponent>({visibleTextEditors: [editor]}),
+            configStore,
+            saveCommand
+        );
+
+        await command.execute(editor);
+
+        verify(configTargetPicker.pick(), {times: 0});
+        verify(extensionConfig.update('savedHighlights', [], vscode.ConfigurationTarget.Workspace));
     });
 });
