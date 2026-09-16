@@ -13,6 +13,7 @@ export const createFakeVsCode = ({editors}: any = {}) => {
         Range,
         window: {
             onDidChangeActiveTextEditor: () => {},
+            onDidChangeVisibleTextEditors: () => {},
             createStatusBarItem: () => ({show: () => {}}),
             createTextEditorDecorationType: createTextEditorDecorationTypeStub(),
             visibleTextEditors: editors
@@ -40,4 +41,4 @@ function createTextEditorDecorationTypeStub() {
     return stubReturns(...decorationTypes);
 }
 
-export const EXECUTION_CONTEXT = {subscriptions: []};
+export const EXECUTION_CONTEXT: {subscriptions: any[]} = {subscriptions: []};
