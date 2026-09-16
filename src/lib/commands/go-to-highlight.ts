@@ -22,25 +22,28 @@ export abstract class GoToHighlightCommand implements CommandLike {
                 textLocationRegistry: TextLocationRegistry,
                 decorationRegistry: DecorationRegistry,
                 decorationTypeRegistry: DecorationTypeRegistry,
-                windowComponent: WindowComponent) {
-        this.decorationOperatorFactory = new DecorationOperatorFactory(decorationRegistry, decorationTypeRegistry, textLocationRegistry, windowComponent);
+                windowComponent: WindowComponent,
+                decorationOperatorFactory?: DecorationOperatorFactory) {
+        this.decorationOperatorFactory = decorationOperatorFactory ||
+            new DecorationOperatorFactory(decorationRegistry, decorationTypeRegistry, textLocationRegistry, windowComponent);
         this.textLocationRegistry = textLocationRegistry;
         this.patternFactory = new PatternFactory(matchingModeRegistry);
     }
 
-    execute(editor: TextEditor) {
+    async execute(editor: TextEditor) {
+        const decorationId = this.textLocationRegistry.queryDecorationId(editor.id, editor.selection, editor.version);
+        if (O.isNone(decorationId)) await this.addDecoration(editor);
         pipe(
-            this.textLocationRegistry.queryDecorationId(editor.id, editor.selection),
-            O.fold(() => O.some(this.addDecoration(editor)), () => O.some(undefined)),
+            O.some(undefined),
             O.chain(() => this.findTargetLocation(editor)),
             O.map(range => { editor.selection = range; })
         );
     }
 
-    private addDecoration(textEditor: TextEditor) {
+    private async addDecoration(textEditor: TextEditor): Promise<void> {
         if (!textEditor.selectedText) return;
         const pattern = this.patternFactory.create({phrase: textEditor.selectedText});
         const decorationOperator = this.decorationOperatorFactory.createForVisibleEditors();
-        decorationOperator.addDecoration(pattern);
+        if (decorationOperator.addDecoration(pattern)) await decorationOperator.waitForFullRefresh();
     }
 }

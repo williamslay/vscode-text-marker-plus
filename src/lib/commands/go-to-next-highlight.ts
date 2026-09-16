@@ -5,6 +5,7 @@ import WindowComponent from '../vscode/window';
 import MatchingModeRegistry from '../matching-mode-registry';
 import {GoToHighlightCommand} from './go-to-highlight';
 import {DecorationTypeRegistry} from '../decoration/decoration-type-registry';
+import DecorationOperatorFactory from '../decoration/decoration-operator-factory';
 
 export class GoToNextHighlightCommand extends GoToHighlightCommand {
 
@@ -12,12 +13,13 @@ export class GoToNextHighlightCommand extends GoToHighlightCommand {
                 textLocationRegistry: TextLocationRegistry,
                 decorationRegistry: DecorationRegistry,
                 decorationTypeRegistry: DecorationTypeRegistry,
-                windowComponent: WindowComponent) {
-        super(matchingModeRegistry, textLocationRegistry, decorationRegistry, decorationTypeRegistry, windowComponent);
+                windowComponent: WindowComponent,
+                decorationOperatorFactory?: DecorationOperatorFactory) {
+        super(matchingModeRegistry, textLocationRegistry, decorationRegistry, decorationTypeRegistry, windowComponent, decorationOperatorFactory);
     }
 
     protected findTargetLocation(editor: TextEditor) {
-        return this.textLocationRegistry.findNextOccurence(editor.id, editor.selection);
+        return this.textLocationRegistry.findNextOccurence(editor.id, editor.selection, editor.version);
     }
 
 }
