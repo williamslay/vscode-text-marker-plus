@@ -334,7 +334,6 @@
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",
-    "vscode:postpublish": "./tag-release.sh",
     "postinstall": "node ./node_modules/vscode/bin/install",
     "coverage": "nyc mocha 'src/test/**/*.ts'",
     "compile": "tsc -p ./",
@@ -349,6 +348,7 @@
   "devDependencies": {
     "@types/mocha": "^8.0.4",
     "@types/node": "^12.14.1",
+    "@vscode/vsce": "4.0.0",
     "codeclimate-test-reporter": "^0.5.1",
     "mocha": "^8.2.1",
     "nyc": "^15.1.0",

@@ -4,6 +4,8 @@
 .omo/**/*
 AGENTS.md
 .github/**/*
+azure-pipelines.yml
+test_handoff.md
 typings/**/*
 images/animations/**/*
 coverage/**/*

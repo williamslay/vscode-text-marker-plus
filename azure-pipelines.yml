@@ -1,9 +1,15 @@
 trigger:
+  branches:
+    include:
+      - master
   tags:
     include:
       - 'v*'
 
-pr: none
+pr:
+  branches:
+    include:
+      - master
 
 pool:
   vmImage: ubuntu-latest
@@ -16,17 +22,33 @@ steps:
       versionSpec: '22.x'
     displayName: 'Use Node.js 22'
 
-  - script: npm ci
+  - script: |
+      npm install -g yarn@1.22.22
+      yarn --version
+    displayName: 'Set up Yarn'
+
+  - script: yarn install --frozen-lockfile
     displayName: 'Install dependencies'
 
-  - script: npm install -g @vscode/vsce
-    displayName: 'Install vsce'
+  - script: yarn run check
+    displayName: 'Compile, lint and test'
+
+  - script: |
+      yarn vsce ls
+      yarn vsce package --out text-marker-plus.vsix
+    displayName: 'Validate and package extension'
 
   - task: AzureCLI@2
     displayName: 'Publish to VS Code Marketplace'
+    condition: and(
+      succeeded(),
+      startsWith(variables['Build.SourceBranch'], 'refs/tags/v')
+      )
     inputs:
       azureSubscription: 'vscode-marketplace-wif'
-      scriptType: pscore
+      scriptType: bash
       scriptLocation: inlineScript
       inlineScript: |
-        vsce publish --azure-credential
+        yarn vsce publish \
+          --packagePath text-marker-plus.vsix \
+          --azure-credential
