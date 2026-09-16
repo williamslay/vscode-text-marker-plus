@@ -1,11 +1,11 @@
 {
-  "name": "text-marker",
-  "displayName": "Text Marker (Highlighter)",
+  "name": "text-marker-Plus",
+  "displayName": "Text Marker Plus",
   "description": "Select text in your code and mark all matches. The highlight colour is configurable",
-  "version": "1.11.0",
-  "publisher": "ryu1kn",
+  "version": "1.0.0",
+  "publisher": "Williamslay",
   "license": "SEE LICENSE IN LICENSE.txt",
-  "icon": "images/text-marker.png",
+  "icon": "images/text-marker-plus.png",
   "bugs": {
     "url": "https://github.com/ryu1kn/vscode-text-marker/issues"
   },
@@ -21,13 +21,10 @@
     "Other"
   ],
   "keywords": [
-    "mark",
     "marker",
-    "match",
     "highlight",
     "search"
   ],
-  "telemetryKey": "99489808-a33c-4235-af6d-04f95a652ead",
   "activationEvents": [
     "*"
   ],
@@ -44,25 +41,31 @@
             "type": "string"
           },
           "default": [
-            "darkgoldenrod",
-            "darkmagenta",
-            "darkolivegreen",
-            "darkslateblue",
-            "darkslategray",
-            "darkviolet",
-            "darkblue",
-            "darkturquoise",
-            "darkgray",
-            "darkkhaki",
-            "darkorange",
-            "darksalmon",
-            "darkseagreen"
+            "#e06c75",
+            "#98c379",
+            "#e5c07b",
+            "#61afef",
+            "#c678dd",
+            "#56b6c2",
+            "#dcdfe4",
+            "#D19A66",
+            "#D98274",
+            "#70C5A3",
+            "#7F8DE1"
           ]
         },
-        "textmarker.defaultHighlightColor": {
-          "description": "Color to be used once all colors listed in `textmarker.highlightColors` are used",
-          "type": "string",
-          "default": "gray"
+        "textmarker.userColor": {
+          "description": "User colors to add after the colors listed in `textmarker.highlightColors` when enabled",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "textmarker.useUserColor": {
+          "description": "Add `textmarker.userColor` values to the highlight color cycle",
+          "type": "boolean",
+          "default": false
         },
         "textmarker.defaultHighlightOpacity": {
           "description": "Opacity to be used when one is not given in the highlight color",
@@ -195,10 +198,20 @@
             ]
           }
         },
-        "textmarker.enableTelemetry": {
-          "description": "Allow usage data to be collected",
+        "textmarker.defaultSaveTarget": {
+          "description": "Where to save highlights by default",
+          "type": "string",
+          "enum": [
+            "workspace",
+            "global",
+            "prompt"
+          ],
+          "default": "workspace"
+        },
+        "textmarker.autoSaveOnToggle": {
+          "description": "Automatically save highlights after Toggle Highlight changes them",
           "type": "boolean",
-          "default": true
+          "default": false
         }
       }
     },
@@ -350,8 +363,7 @@
     "color-rgba": "2.2.3",
     "fp-ts": "2.9.0",
     "lodash.isnumber": "3.0.3",
-    "uuid": "3.3.3",
-    "vscode-extension-telemetry": "0.0.22"
+    "uuid": "3.3.3"
   },
   "resolutions": {
     "**/minimist": "^1.2.5"

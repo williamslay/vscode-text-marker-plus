@@ -1,5 +1,9 @@
 .vscode/**/*
 .vscode-test/**/*
+.codegraph
+.omo/**/*
+AGENTS.md
+.github/**/*
 typings/**/*
 images/animations/**/*
 coverage/**/*

@@ -6,3 +6,6 @@
 /coverage
 *.log
 __*
+/.omo/
+AGENTS.md
+*.vsix
