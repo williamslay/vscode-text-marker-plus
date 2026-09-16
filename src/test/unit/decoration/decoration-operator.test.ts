@@ -16,15 +16,17 @@ suite('DecorationOperator', () => {
         const editors = [mock(TextEditor)];
         const pattern = mock(StringPattern);
 
-        test('it highlights all the strings match to the given pattern', () => {
+        test('it highlights nearby strings before completing the full match', () => {
             const decorationRegistry = mock(DecorationRegistry);
             const decoration = {} as Decoration;
             when(decorationRegistry.issue(pattern, any())).thenReturn(some(decoration));
+            when(decorationRegistry.inquireById(decoration.id)).thenReturn(some(decoration));
             const textDecorator = mock(TextDecorator);
             const operator = new DecorationOperator(editors, decorationRegistry, textDecorator);
 
-            operator.addDecoration(pattern);
+            operator.addDecoration(pattern, undefined, true);
 
+            verify(textDecorator.decorateNearby(editors, [decoration]));
             verify(textDecorator.decorate(editors, [decoration]));
         });
 
@@ -35,6 +37,7 @@ suite('DecorationOperator', () => {
             const operator = new DecorationOperator(editors, decorationRegistry, textDecorator);
             operator.addDecoration(pattern);
 
+            verify(textDecorator.decorateNearby(any(), any()), {times: 0});
             verify(textDecorator.decorate(any(), any()), {times: 0});
         });
     });

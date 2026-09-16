@@ -10,6 +10,7 @@ export default class DecorationOperator {
     private readonly editors: TextEditor[];
     private readonly decorationRegistry: DecorationRegistry;
     private readonly textDecorator: TextDecorator;
+    private fullRefresh: Promise<void>;
 
     constructor(editors: TextEditor[],
                 decorationRegistry: DecorationRegistry,
@@ -17,21 +18,37 @@ export default class DecorationOperator {
         this.editors = editors;
         this.decorationRegistry = decorationRegistry;
         this.textDecorator = textDecorator;
+        this.fullRefresh = Promise.resolve();
     }
 
-    addDecoration(pattern: Pattern, colour?: string): void {
-        pipe(
+    addDecoration(pattern: Pattern, colour?: string, refreshNearby = false): boolean {
+        return pipe(
             this.decorationRegistry.issue(pattern, colour),
-            O.map(decoration => {
-                this.textDecorator.decorate(this.editors, [decoration]);
-            })
+            O.fold(
+                () => false,
+                decoration => {
+                    if (refreshNearby) {
+                        this.textDecorator.decorateNearby(this.editors, [decoration]);
+                        this.fullRefresh = this.textDecorator.decorate(this.editors, [decoration]);
+                    } else {
+                        this.fullRefresh = this.textDecorator.decorate(this.editors, [decoration]);
+                    }
+                    return true;
+                }
+            )
         );
     }
 
-    removeDecoration(decorationId: string): void {
-        pipe(
+    removeDecoration(decorationId: string): boolean {
+        return pipe(
             this.decorationRegistry.inquireById(decorationId),
-            O.map(d => this._removeDecoration(d))
+            O.fold(
+                () => false,
+                decoration => {
+                    this._removeDecoration(decoration);
+                    return true;
+                }
+            )
         );
     }
 
@@ -56,7 +73,16 @@ export default class DecorationOperator {
 
     refreshDecorations() {
         const decorations = this.decorationRegistry.retrieveAll();
-        this.textDecorator.decorate(this.editors, decorations);
+        this.fullRefresh = this.textDecorator.decorate(this.editors, decorations);
+    }
+
+    refreshNearbyDecorations() {
+        const decorations = this.decorationRegistry.retrieveAll();
+        this.textDecorator.decorateNearby(this.editors, decorations);
+    }
+
+    waitForFullRefresh(): Promise<void> {
+        return this.fullRefresh;
     }
 
 }
