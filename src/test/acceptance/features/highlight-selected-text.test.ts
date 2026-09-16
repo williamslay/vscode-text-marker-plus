@@ -1,12 +1,9 @@
-import {verify, wrapVerify} from '../../helpers/mock';
+import {verify} from '../../helpers/mock';
 
 import AppIntegrator from '../../../lib/app-integrator';
 import {createFakeEditor} from '../helpers/fake-editor';
 import {createFakeVsCode, EXECUTION_CONTEXT} from '../helpers/fake-vscode';
 import {Position, Range} from 'vscode';
-import {getVsTelemetryReporterCreator} from '../../../lib/telemetry/vscode-telemetry-reporter';
-import {join} from 'path';
-import {TelemetryReporterLocator} from '../../../lib/telemetry/telemetry-reporter-locator';
 
 suite('Highlight command', () => {
 
@@ -15,18 +12,21 @@ suite('Highlight command', () => {
     let editor3: any;
     let command: any;
     let fakeVscode: any;
-    const packageJsonPath = join(__dirname, '..', '..', '..', '..', 'package.json');
-
     setup(() => {
         editor1 = createFakeEditor({wholeText: 'A TEXT B TEXT C', selectedText: 'TEXT'});
         editor2 = createFakeEditor({wholeText: 'a TEXT'});
         editor3 = createFakeEditor({wholeText: 'a TEXT', selectedText: 'TEX'});
         fakeVscode = createFakeVsCode({editors: [editor1, editor2, editor3]});
-        TelemetryReporterLocator.load(packageJsonPath, getVsTelemetryReporterCreator(false));
-
         AppIntegrator.create(fakeVscode, console).integrate(EXECUTION_CONTEXT);
 
         command = fakeVscode._commands['textmarker.toggleHighlight'];
+    });
+
+    teardown(() => {
+        EXECUTION_CONTEXT.subscriptions.forEach(subscription => {
+            if (subscription && typeof subscription.dispose === 'function') subscription.dispose();
+        });
+        EXECUTION_CONTEXT.subscriptions.length = 0;
     });
 
     test('highlights selected text', async () => {
@@ -45,34 +45,20 @@ suite('Highlight command', () => {
         await command(editor1);
         await command(editor3);
 
-        wrapVerify((c1, c2) => verify(editor1.setDecorations(c1(), c2())), {
-            call1: [
-                'DECORATION_TYPE_2',
-                [
-                    new Range(new Position(0, 2), new Position(0, 5)),
-                    new Range(new Position(0, 9), new Position(0, 12))
-                ]
-            ]
-        });
-        wrapVerify((c1, c2) => verify(editor3.setDecorations(c1(), c2())), {
-            call1: [
-                'DECORATION_TYPE_2',
-                [
-                    new Range(new Position(0, 2), new Position(0, 5))
-                ]
-            ]
-        });
+        verify(editor1.setDecorations('DECORATION_TYPE_2', [
+            new Range(new Position(0, 2), new Position(0, 5)),
+            new Range(new Position(0, 9), new Position(0, 12))
+        ]));
+        verify(editor3.setDecorations('DECORATION_TYPE_2', [
+            new Range(new Position(0, 2), new Position(0, 5))
+        ]));
     });
 
     test('unhighlight selected text if the exact text is already selected', async () => {
         await command(editor1);
         await command(editor1);
 
-        wrapVerify((c1, c2) => verify(editor1.setDecorations(c1(), c2())), {
-            call1: ['DECORATION_TYPE_1', []]
-        });
-        wrapVerify((c1, c2) => verify(editor2.setDecorations(c1(), c2())), {
-            call1: ['DECORATION_TYPE_1', []]
-        });
+        verify(editor1.setDecorations('DECORATION_TYPE_1', []));
+        verify(editor2.setDecorations('DECORATION_TYPE_1', []));
     });
 });
