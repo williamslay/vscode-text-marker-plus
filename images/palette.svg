@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="520"
+     height="430"
+     viewBox="0 0 520 430">
+
+  <!-- Background -->
+  <rect width="520" height="430" fill="#282c34"/>
+
+  <!-- Title -->
+  <text x="24" y="36"
+        fill="#abb2bf"
+        font-family="Arial, sans-serif"
+        font-size="20"
+        font-weight="600">
+    Highlight Palette
+  </text>
+
+  <!-- Color 1 -->
+  <rect x="24" y="60" width="28" height="28"
+        rx="5" fill="#e06c75"/>
+  <text x="68" y="80"
+        fill="#abb2bf"
+        font-family="monospace"
+        font-size="16">
+    #E06C75
+  </text>
+
+  <!-- Color 2 -->
+  <rect x="24" y="100" width="28" height="28"
+        rx="5" fill="#98c379"/>
+  <text x="68" y="120"
+        fill="#abb2bf"
+        font-family="monospace"
+        font-size="16">
+    #98C379
+  </text>
+
+  <!-- Color 3 -->
+  <rect x="24" y="140" width="28" height="28"
+        rx="5" fill="#e5c07b"/>
+  <text x="68" y="160"
+        fill="#abb2bf"
+        font-family="monospace"
+        font-size="16">
+    #E5C07B
+  </text>
+
+  <!-- Color 4 -->
+  <rect x="24" y="180" width="28" height="28"
+        rx="5" fill="#61afef"/>
+  <text x="68" y="200"
+        fill="#abb2bf"
+        font-family="monospace"
+        font-size="16">
+    #61AFEF
+  </text>
+
+  <!-- Color 5 -->
+  <rect x="24" y="220" width="28" height="28"
+        rx="5" fill="#c678dd"/>
+  <text x="68" y="240"
+        fill="#abb2bf"
+        font-family="monospace"
+        font-size="16">
+    #C678DD
+  </text>
+
+  <!-- Color 6 -->
+  <rect x="24" y="260" width="28" height="28"
+        rx="5" fill="#56b6c2"/>
+  <text x="68" y="280"
+        fill="#abb2bf"
+        font-family="monospace"
+        font-size="16">
+    #56B6C2
+  </text>
+
+  <!-- Extended colors -->
+
+  <rect x="270" y="60" width="28" height="28"
+        rx="5" fill="#d19a66"/>
+  <text x="314" y="80"
+        fill="#abb2bf"
+        font-family="monospace"
+        font-size="16">
+    #D19A66
+  </text>
+
+  <rect x="270" y="100" width="28" height="28"
+        rx="5" fill="#d98274"/>
+  <text x="314" y="120"
+        fill="#abb2bf"
+        font-family="monospace"
+        font-size="16">
+    #D98274
+  </text>
+
+  <rect x="270" y="140" width="28" height="28"
+        rx="5" fill="#70c5a3"/>
+  <text x="314" y="160"
+        fill="#abb2bf"
+        font-family="monospace"
+        font-size="16">
+    #70C5A3
+  </text>
+
+  <rect x="270" y="180" width="28" height="28"
+        rx="5" fill="#7f8de1"/>
+  <text x="314" y="200"
+        fill="#abb2bf"
+        font-family="monospace"
+        font-size="16">
+    #7F8DE1
+  </text>
+
+</svg>
