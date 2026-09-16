@@ -6,6 +6,8 @@ project.
 
 ## Unreleased
 
+## 1.0.0 - 2026-09-16
+
 ### Added
 
 - Established an independently maintained distribution derived from
@@ -20,8 +22,25 @@ project.
 - Changed the default highlight palette to the six One Half Dark accent colors.
 - Added optional `textmarker.userColor` array and `textmarker.useUserColor`
   switch for extending the color set used by subsequent color cycles.
-- Documented the maintained feature set and future Marketplace distribution
-  intent.
+- Documented the maintained feature set and independent distribution status.
+
+### Changed
+
+- Full-document matching runs in a dedicated worker and caches completed
+  matches by document version and highlight rule.
+- Visible split panes refresh highlights even when they do not have focus.
+- Changed the default extension display name to `Text Marker Plus`.
+
+### Fixed
+
+- Discarded stale asynchronous match results after document, rule, or pane
+  changes.
+- Preserved complete navigation ranges while nearby matches render quickly.
+
+### Removed
+
+- Removed telemetry reporting, the `telemetryKey`, and the
+  `textmarker.enableTelemetry` setting.
 
 ## License
 
