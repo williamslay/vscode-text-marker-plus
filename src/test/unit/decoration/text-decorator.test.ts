@@ -1,4 +1,4 @@
-import {mock, mockMethods, mockType, verify, when, wrapVerify} from '../../helpers/mock';
+import {any, mock, mockMethods, mockType, verify, when, wrapVerify} from '../../helpers/mock';
 
 import TextDecorator from '../../../lib/decoration/text-decorator';
 import PatternFactory from '../../../lib/pattern/pattern-factory';
@@ -39,7 +39,7 @@ suite('TextDecorator', () => {
     when(decorationTypeRegistry.inquire('DECORATION_ID_1')).thenReturn(some('DECORATION_TYPE_1'));
     when(decorationTypeRegistry.inquire('DECORATION_ID_2')).thenReturn(some('DECORATION_TYPE_2'));
 
-    test('it decorates the pattern in the editors', () => {
+    test('it decorates the pattern in the editors', async () => {
         const editors = [
             mockMethods<TextEditor>(['setDecorations'], {
                 id: 'EDITOR_ID_1',
@@ -53,21 +53,32 @@ suite('TextDecorator', () => {
         const textLocationRegistry = mock(TextLocationRegistry);
         const textDecorator = new TextDecorator(textLocationRegistry, decorationTypeRegistry);
 
-        textDecorator.decorate(editors, [decoration0]);
+        await textDecorator.decorate(editors, [decoration0]);
 
         verify(editors[0].setDecorations(decorationType, [{start: 7, end: 11}, {start: 12, end: 16}]));
         verify(editors[1].setDecorations(decorationType, [{start: 15, end: 19}]));
-        wrapVerify((c1, c2, c3) => verify(textLocationRegistry.register(c1(), c2(), c3())), [
-            [
-                'EDITOR_ID_1',
-                'DECORATION_ID',
-                [{end: 11, start: 7}, {end: 16, start: 12}]
-            ], [
-                'EDITOR_ID_2',
-                'DECORATION_ID',
-                [{end: 19, start: 15}]
-            ]
-        ]);
+        verify(textLocationRegistry.register(
+            'EDITOR_ID_1', 'DECORATION_ID', 0,
+            [{end: 11, start: 7}, {end: 16, start: 12}]
+        ));
+        verify(textLocationRegistry.register(
+            'EDITOR_ID_2', 'DECORATION_ID', 0,
+            [{end: 19, start: 15}]
+        ));
+    });
+
+    test('it decorates only matches near the cursor for fast refresh', () => {
+        const editor = mockMethods<TextEditor>(['setDecorations'], {
+            id: 'EDITOR_ID',
+            nearbyTexts: [{text: 'LONG', offset: 100}]
+        });
+        const textLocationRegistry = mock(TextLocationRegistry);
+        const textDecorator = new TextDecorator(textLocationRegistry, decorationTypeRegistry);
+
+        textDecorator.decorateNearby([editor], [decoration0]);
+
+        verify(editor.setDecorations(decorationType, [{start: 100, end: 104}]));
+        verify(textLocationRegistry.register(any(), any(), any(), any()), {times: 0});
     });
 
     test('it removes decorations from the pattern in the editors', () => {
@@ -90,16 +101,13 @@ suite('TextDecorator', () => {
         ]);
     });
 
-    test("it doesn't apply decorations if decorationType is not valid", () => {
+    test("it doesn't apply decorations if decorationType is not valid", async () => {
         const editor = mockMethods<TextEditor>(['setDecorations'], {
             wholeText: 'ENTIRE LONG LONG TEXT'
         });
-        const textLocationRegistry = mockType<TextLocationRegistry>({
-            register: () => {
-            }
-        });
+        const textLocationRegistry = mock(TextLocationRegistry);
         const textDecorator = new TextDecorator(textLocationRegistry, decorationTypeRegistry);
-        textDecorator.decorate([editor], [decoration3, decoration4]);
+        await textDecorator.decorate([editor], [decoration3, decoration4]);
         verify(editor.setDecorations(decorationType, [{start: 7, end: 11}, {start: 12, end: 16}]));
     });
 
