@@ -6,4 +6,5 @@ export type ExtensionContextLike = {
 
 export interface CommandLike {
     execute(editor?: TextEditor): Promise<any> | any;
+    refreshVisibleEditors?(): void;
 }

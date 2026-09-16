@@ -24,7 +24,7 @@ export default class CommandComponent {
 
     registerCommand(item: CommandItem): Disposable {
         const registerer = this.getCommandRegisterer(item.type);
-        const commandWrapper = new ManualTriggerCommand(item.name, item.command, this.logger);
+        const commandWrapper = new ManualTriggerCommand(item.command, this.logger);
         return registerer(item.name, commandWrapper.execute, commandWrapper);
     }
 
