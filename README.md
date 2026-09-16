@@ -1,4 +1,4 @@
-# Text Marker Plus (Independently Maintained)
+# Text Marker Plus
 
 This is an independently maintained distribution derived from
 [ryu1kn/vscode-text-marker](https://github.com/ryu1kn/vscode-text-marker).
@@ -107,7 +107,7 @@ Set `defaultSaveTarget` to `global` or `prompt` for different save behavior.
 
 The default highlight palette follows the [One Half Dark](https://github.com/sonph/onehalf) accent colors, with several additional colors:
 
-![Highlight palette](images/palette.svg)
+![Highlight palette](images/palette.png)
 
 When `textmarker.useUserColor` is enabled, colors from `textmarker.userColor`
 are assigned after these colors. When the combined color set is exhausted,

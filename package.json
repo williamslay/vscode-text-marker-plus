@@ -7,12 +7,12 @@
   "license": "SEE LICENSE IN LICENSE.txt",
   "icon": "images/text-marker-plus.png",
   "bugs": {
-    "url": "https://github.com/ryu1kn/vscode-text-marker/issues"
+    "url": "https://github.com/williamslay/vscode-text-marker-plus/issues"
   },
-  "homepage": "https://github.com/ryu1kn/vscode-text-marker/blob/master/README.md",
+  "homepage": "https://github.com/williamslay/vscode-text-marker-plus/blob/master/README.md",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ryu1kn/vscode-text-marker.git"
+    "url": "https://github.com/williamslay/vscode-text-marker-plus.git"
   },
   "engines": {
     "vscode": "^1.51.0"
