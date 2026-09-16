@@ -5,6 +5,7 @@ import {Position, Selection} from 'vscode';
 export const createFakeEditor = ({selectedText, wholeText}: any = {}) => {
     return mockMethods<vscode.TextEditor>(['setDecorations'], {
         document: {
+            version: 1,
             getText: (selection: any) => selection ? selectedText : wholeText,
             positionAt: (offset: number) => new Position(0, offset),
             offsetAt: (p: Position) => p.character,

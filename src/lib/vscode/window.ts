@@ -39,6 +39,10 @@ export default class WindowComponent {
         return () => this.window.showInformationMessage(message) as Promise<string>;
     }
 
+    showErrorMessage(message: string): T.Task<string> {
+        return () => this.window.showErrorMessage(message) as Promise<string>;
+    }
+
     showQuickPick<U extends QuickPickItem>(selectItems: U[], options: QuickPickOptions): T.Task<O.Option<U>> {
         const items = this.fillDescription(selectItems);
         return pipe(
