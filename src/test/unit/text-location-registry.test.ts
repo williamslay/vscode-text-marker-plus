@@ -45,6 +45,14 @@ suite('TextLocationRegistry', () => {
         assert.deepEqual(decorationId2, none);
     });
 
+    test('rejects stale registrations after document version changes', () => {
+        registry.setDocumentVersion('EDITOR_ID', 2);
+        assert.equal(registry.register('EDITOR_ID', 'STALE', 1, [range(5, 8)]), false);
+        assert.deepEqual(registry.queryDecorationId('EDITOR_ID', range(1, 1), 2), none);
+        assert.equal(registry.register('EDITOR_ID', 'CURRENT', 2, [range(5, 8)]), true);
+        assert.deepEqual(registry.queryDecorationId('EDITOR_ID', range(6, 6), 2), some('CURRENT'));
+    });
+
     function range(start: number, end: number) {
         return {start, end};
     }
