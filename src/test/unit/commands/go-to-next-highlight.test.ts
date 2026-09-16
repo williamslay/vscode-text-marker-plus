@@ -79,4 +79,12 @@ suite('Go-to-next-highlight command', function () {
             assert.deepEqual(editor.selection, {start: 25, end: 29});
         });
     });
+
+    test('stays within the current highlight rule when other rules overlap the editor', () => {
+        const registry = new TextLocationRegistry();
+        registry.register('EDITOR_ID', 'FIRST_RULE', [{start: 10, end: 15}, {start: 40, end: 45}]);
+        registry.register('EDITOR_ID', 'SECOND_RULE', [{start: 20, end: 25}, {start: 30, end: 35}]);
+
+        assert.deepEqual(registry.findNextOccurence('EDITOR_ID', {start: 11, end: 11}), some({start: 40, end: 45}));
+    });
 });
