@@ -9,6 +9,7 @@ test_handoff.md
 typings/**/*
 images/animations/**/*
 coverage/**/*
+.nyc_output/**/*
 .codeclimate.yml
 .gitignore
 .editorconfig
@@ -26,7 +27,6 @@ __*
 __*/**/*
 .DS_Store
 *.vsix
-tslint.json
 eslint.config.js
 out/test/**
 out/**/*.map
