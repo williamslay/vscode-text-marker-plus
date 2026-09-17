@@ -25,10 +25,27 @@ export interface MatchWorker {
 }
 
 type PendingMatch = {
-    key: string;
+    cacheKey: string;
+    requestKey: string;
+    uri: string;
+    version: number;
     resolve: (ranges: FlatRange[]) => void;
     reject: (error: Error) => void;
 };
+
+export type FullMatchCacheOptions = {
+    readonly maxEntries?: number;
+    readonly maxRanges?: number;
+};
+
+type CacheEntry = {
+    readonly uri: string;
+    readonly version: number;
+    readonly ranges: FlatRange[];
+};
+
+const DEFAULT_MAX_CACHE_ENTRIES = 128;
+const DEFAULT_MAX_CACHED_RANGES = 100000;
 
 export function patternFor(pattern: Pattern): WorkerPattern {
     return {
@@ -60,19 +77,28 @@ export class InlineMatchService implements FullMatchService {
 
 export class FullMatchWorkerService implements FullMatchService {
     private readonly worker: MatchWorker;
-    private readonly cache: Map<string, FlatRange[]>;
+    private readonly cache: Map<string, CacheEntry>;
     private readonly pending: Map<number, PendingMatch>;
     private readonly pendingByKey: Map<string, Promise<FlatRange[]>>;
+    private readonly latestVersionByKey: Map<string, number>;
+    private readonly maxCacheEntries: number;
+    private readonly maxCachedRanges: number;
     private nextRequestId: number;
+    private cachedRangeCount: number;
     private disposed: boolean;
 
-    constructor(createWorker: () => MatchWorker = createDefaultWorker) {
+    constructor(createWorker: () => MatchWorker = createDefaultWorker,
+                options: FullMatchCacheOptions = {}) {
         this.worker = createWorker();
         if (this.worker.unref) this.worker.unref();
         this.cache = new Map();
         this.pending = new Map();
         this.pendingByKey = new Map();
+        this.latestVersionByKey = new Map();
+        this.maxCacheEntries = options.maxEntries || DEFAULT_MAX_CACHE_ENTRIES;
+        this.maxCachedRanges = options.maxRanges || DEFAULT_MAX_CACHED_RANGES;
         this.nextRequestId = 0;
+        this.cachedRangeCount = 0;
         this.disposed = false;
         this.worker.on('message', message => this.handleMessage(message));
         this.worker.on('error', (...args: unknown[]) => {
@@ -89,25 +115,43 @@ export class FullMatchWorkerService implements FullMatchService {
 
     match(request: FullMatchRequest): Promise<FlatRange[]> {
         if (this.disposed) return Promise.reject(new Error('Full match service is disposed'));
-        const key = this.getCacheKey(request);
-        const cached = this.cache.get(key);
-        if (cached) return Promise.resolve(cached.map(range => ({start: range.start, end: range.end})));
-        const existing = this.pendingByKey.get(key);
+        const cacheKey = this.getCacheKey(request);
+        this.recordLatestVersion(cacheKey, request.version);
+        const cached = this.cache.get(cacheKey);
+        if (cached && cached.version === request.version) {
+            this.touchCacheEntry(cacheKey, cached);
+            return Promise.resolve(this.copyRanges(cached.ranges));
+        }
+        if (cached && cached.version < request.version) {
+            this.deleteCacheEntry(cacheKey);
+        }
+        const requestKey = this.getRequestKey(cacheKey, request.version);
+        const existing = this.pendingByKey.get(requestKey);
         if (existing) return existing;
 
         const requestId = this.nextRequestId++;
         const promise = new Promise<FlatRange[]>((resolve, reject) => {
-            this.pending.set(requestId, {key, resolve, reject});
+            this.pending.set(requestId, {
+                cacheKey,
+                requestKey,
+                uri: request.uri,
+                version: request.version,
+                resolve,
+                reject
+            });
         });
-        this.pendingByKey.set(key, promise);
+        this.pendingByKey.set(requestKey, promise);
         try {
             this.worker.postMessage({requestId, pattern: request.pattern, text: request.text});
         } catch (error) {
             const pending = this.pending.get(requestId);
             this.pending.delete(requestId);
-            this.pendingByKey.delete(key);
+            this.pendingByKey.delete(requestKey);
             const pendingError = error instanceof Error ? error : new Error(String(error));
-            if (pending) pending.reject(pendingError);
+            if (pending) {
+                pending.reject(pendingError);
+                this.removeUnusedVersion(cacheKey);
+            }
         }
         return promise;
     }
@@ -117,11 +161,18 @@ export class FullMatchWorkerService implements FullMatchService {
         this.disposed = true;
         const error = new Error('Full match service is disposed');
         this.failPending(error);
+        this.cache.clear();
+        this.latestVersionByKey.clear();
+        this.cachedRangeCount = 0;
         void this.worker.terminate();
     }
 
     private getCacheKey(request: FullMatchRequest): string {
-        return `${request.uri}\u0000${request.version}\u0000${patternFingerprint(request.pattern)}`;
+        return `${request.uri}\u0000${patternFingerprint(request.pattern)}`;
+    }
+
+    private getRequestKey(cacheKey: string, version: number): string {
+        return `${cacheKey}\u0000${version}`;
     }
 
     private handleMessage(value: unknown): void {
@@ -129,19 +180,70 @@ export class FullMatchWorkerService implements FullMatchService {
         const pending = this.pending.get(value.requestId);
         if (!pending) return;
         this.pending.delete(value.requestId);
-        this.pendingByKey.delete(pending.key);
+        this.pendingByKey.delete(pending.requestKey);
         if ('error' in value) {
             pending.reject(new Error(value.error));
+            this.removeUnusedVersion(pending.cacheKey);
             return;
         }
-        this.cache.set(pending.key, value.ranges);
-        pending.resolve(value.ranges.map(range => ({start: range.start, end: range.end})));
+        if (this.latestVersionByKey.get(pending.cacheKey) === pending.version) {
+            this.storeCacheEntry(pending.cacheKey, pending.uri, pending.version, value.ranges);
+        }
+        this.removeUnusedVersion(pending.cacheKey);
+        pending.resolve(this.copyRanges(value.ranges));
     }
 
     private failPending(error: Error): void {
         this.pending.forEach(item => item.reject(error));
         this.pending.clear();
         this.pendingByKey.clear();
+    }
+
+    private recordLatestVersion(cacheKey: string, version: number): void {
+        const latestVersion = this.latestVersionByKey.get(cacheKey);
+        if (latestVersion === undefined || version > latestVersion) {
+            this.latestVersionByKey.set(cacheKey, version);
+        }
+    }
+
+    private storeCacheEntry(key: string, uri: string, version: number, ranges: FlatRange[]): void {
+        if (ranges.length > this.maxCachedRanges) return;
+        this.deleteCacheEntry(key);
+        this.cache.set(key, {uri, version, ranges});
+        this.cachedRangeCount += ranges.length;
+        this.enforceCacheLimits();
+    }
+
+    private removeUnusedVersion(cacheKey: string): void {
+        if (this.cache.has(cacheKey)) return;
+        for (const pending of this.pending.values()) {
+            if (pending.cacheKey === cacheKey) return;
+        }
+        this.latestVersionByKey.delete(cacheKey);
+    }
+
+    private touchCacheEntry(key: string, entry: CacheEntry): void {
+        this.cache.delete(key);
+        this.cache.set(key, entry);
+    }
+
+    private enforceCacheLimits(): void {
+        while (this.cache.size > this.maxCacheEntries || this.cachedRangeCount > this.maxCachedRanges) {
+            const oldest = this.cache.keys().next();
+            if (oldest.done) return;
+            this.deleteCacheEntry(oldest.value);
+        }
+    }
+
+    private deleteCacheEntry(key: string): void {
+        const entry = this.cache.get(key);
+        if (!entry) return;
+        this.cache.delete(key);
+        this.cachedRangeCount -= entry.ranges.length;
+    }
+
+    private copyRanges(ranges: FlatRange[]): FlatRange[] {
+        return ranges.map(range => ({start: range.start, end: range.end}));
     }
 }
 
