@@ -32,7 +32,7 @@ import {AutoTriggerCommand} from './commands/command';
 import {DecorationTypeRegistry} from './decoration/decoration-type-registry';
 import {FullMatchWorkerService} from './matching/full-match-service';
 
-const generateUuid = require('uuid/v4');
+const {v4: generateUuid} = require('uuid');
 const BASE_STATUS_BAR_PRIORITY = 100;
 
 export default class CommandFactory {

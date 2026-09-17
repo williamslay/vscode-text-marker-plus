@@ -9,7 +9,44 @@
 // to report the results back to the caller. When the tests are finished, return
 // a possible error to the callback or null if none.
 
-var testRunner = require('vscode/lib/testrunner');
+export {};
+
+const fs = require('fs');
+const path = require('path');
+const MochaConstructor = require('mocha');
+const tty = require('tty');
+
+if (!tty.getWindowSize) {
+    tty.getWindowSize = () => [80, 75];
+}
+
+let mochaInstance = new MochaConstructor({
+    ui: 'tdd',
+    useColors: true
+});
+
+function configure(options: any) {
+    mochaInstance = new MochaConstructor(options);
+}
+
+function findTestFiles(directory: string): string[] {
+    return fs.readdirSync(directory, {withFileTypes: true}).reduce((files: string[], entry: any) => {
+        const entryPath = path.join(directory, entry.name);
+        if (entry.isDirectory()) return files.concat(findTestFiles(entryPath));
+        return entry.name.endsWith('.test.js') ? files.concat(entryPath) : files;
+    }, []);
+}
+
+function run(testsRoot: string, callback: (error: Error | null, failures?: number) => void) {
+    try {
+        findTestFiles(testsRoot).forEach(file => mochaInstance.addFile(file));
+        mochaInstance.run((failures: number) => callback(null, failures));
+    } catch (error) {
+        callback(error);
+    }
+}
+
+const testRunner = {configure, run};
 
 // You can directly control Mocha options by uncommenting the following lines
 // See https://github.com/mochajs/mocha/wiki/Using-mocha-programmatically#set-options for more info

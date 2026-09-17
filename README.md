@@ -126,7 +126,7 @@ empty.
 
 ## Development
 
-Use Node.js `12.14.1` and Yarn:
+Use Node.js `22.23.0` and Yarn:
 
 ```sh
 yarn install
