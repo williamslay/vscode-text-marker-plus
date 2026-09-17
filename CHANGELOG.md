@@ -6,6 +6,28 @@ project.
 
 ## Unreleased
 
+## 1.0.3 - 2026-09-17
+
+### Changed
+
+- Limited automatic full matching to the active document and its visible split
+  panes; background documents are matched when they become active.
+- Replaced versioned cache entries with one version-checked entry per document
+  and highlight rule, while retaining bounded LRU eviction.
+- Replaced allocation-heavy literal range construction with linear scanning.
+
+## Known Issues
+
+- In-flight full-document match requests are not cancelled when a newer
+  refresh supersedes them; stale results are discarded after computation.
+- Refreshes still scale with the number of visible editors and highlight rules,
+  and related editor/document events can schedule duplicate work.
+- The shared refresh generation can invalidate unrelated asynchronous highlight
+  results when several rules are refreshed together.
+- User-supplied regular expressions can require excessive CPU time because
+  matching has no timeout or complexity limit.
+- Full-match worker failure recovery and restart handling remain incomplete.
+
 ## 1.0.2 - 2026-09-17
 
 ### Changed
@@ -13,6 +35,17 @@ project.
 - Updated the development and CI toolchain to Node.js 22.
 - Replaced TSLint with ESLint and TypeScript ESLint.
 - Updated TypeScript and Node.js type definitions.
+
+## 1.0.1 - 2026-09-17
+
+### Changed
+
+- Updated runtime dependency versions for current Node.js and VS Code tooling.
+- Added Azure Pipelines CI with frozen Yarn installation, validation, and VSIX
+  packaging.
+- Added tag-triggered Marketplace publishing through Azure Workload Identity
+  Federation.
+- Updated CodeQL workflow actions and test setup for the maintained distribution.
 
 ## 1.0.0 - 2026-09-16
 

@@ -129,7 +129,7 @@ empty.
 Use Node.js `22.23.0` and Yarn:
 
 ```sh
-yarn install
+yarn install --frozen-lockfile
 yarn run check
 ```
 
