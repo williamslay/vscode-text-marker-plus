@@ -17,7 +17,7 @@ class CommandWrapper {
             const editor = vsEditor && new TextEditor(vsEditor);
             return await this.command.execute(editor);
         } catch (e) {
-            this.logger.error(e.stack);
+            this.logger.error(e instanceof Error ? e.stack || e.message : String(e));
         }
     }
 
@@ -25,7 +25,7 @@ class CommandWrapper {
         try {
             if (this.command.refreshVisibleEditors) this.command.refreshVisibleEditors();
         } catch (e) {
-            this.logger.error(e.stack);
+            this.logger.error(e instanceof Error ? e.stack || e.message : String(e));
         }
     }
 

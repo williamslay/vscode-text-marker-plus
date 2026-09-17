@@ -27,7 +27,7 @@ export default class AutoRefreshDecorationWithDelay implements CommandLike {
             try {
                 this.refreshNearby(editor);
             } catch (e) {
-                this.logger.error(e.stack);
+                this.logger.error(e instanceof Error ? e.stack || e.message : String(e));
             }
         }
         this.debouncer.debounce(() => {
@@ -35,7 +35,7 @@ export default class AutoRefreshDecorationWithDelay implements CommandLike {
                 const currentEditor = this.windowComponent.activeTextEditor;
                 if (currentEditor) this.refresh(currentEditor);
             } catch (e) {
-                this.logger.error(e.stack);
+                this.logger.error(e instanceof Error ? e.stack || e.message : String(e));
             }
         });
     }

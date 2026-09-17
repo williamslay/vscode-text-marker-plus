@@ -4,7 +4,7 @@ const isNumber = require('lodash.isnumber');
 
 export default class Debouncer {
     private readonly configStore: ConfigStore;
-    private timeout?: NodeJS.Timer;
+    private timeout?: ReturnType<typeof setTimeout>;
 
     constructor(configStore: ConfigStore) {
         this.configStore = configStore;
