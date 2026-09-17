@@ -118,7 +118,7 @@ export default class CommandFactory {
     }
 
     createAutoRefreshDecoration() {
-        const command = new AutoRefreshDecoration(this.getDecorationOperatorFactory());
+        const command = new AutoRefreshDecoration(this.getDecorationOperatorFactory(), this.getWindowComponent());
         return this._wrapCommand(command);
     }
 
@@ -129,7 +129,7 @@ export default class CommandFactory {
             this.getWindowComponent(),
             this.logger
         );
-        return this._wrapCommand(command);
+        return command;
     }
 
     private _wrapCommand(command: CommandLike) {
