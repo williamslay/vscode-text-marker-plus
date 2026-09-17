@@ -42,7 +42,7 @@ function run(testsRoot: string, callback: (error: Error | null, failures?: numbe
         findTestFiles(testsRoot).forEach(file => mochaInstance.addFile(file));
         mochaInstance.run((failures: number) => callback(null, failures));
     } catch (error) {
-        callback(error);
+        callback(error instanceof Error ? error : new Error(String(error)));
     }
 }
 

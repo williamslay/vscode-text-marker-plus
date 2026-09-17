@@ -40,9 +40,9 @@ export function mockFunction() {
 }
 
 export function mockType<T>(params?: any): T {
-    return Object.assign({} as T, params);
+    return Object.assign({}, params) as T;
 }
 
 export function mockMethods<T>(methods: string[], params?: any): T {
-    return Object.assign(td.object(methods) as T, params);
+    return Object.assign({}, td.object(methods), params) as T;
 }
