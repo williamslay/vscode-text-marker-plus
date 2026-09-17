@@ -7,8 +7,7 @@ Text Marker behavior while adding configurable save targets, optional automatic
 saving after **Toggle Highlight**, and ongoing compatibility and performance
 fixes.
 
-This project is not an official release of the upstream author. It may be
-distributed through the Visual Studio Code Marketplace in the future.
+And the extention can be installed from the the [market](https://marketplace.visualstudio.com/items?itemName=Williamslay.text-marker-Plus).
 
 ## Differences from Upstream
 
@@ -19,7 +18,7 @@ currently differs from the original plugin in these areas:
   VS Code Extension Host.
 - Completed matches are cached by document version and highlight rule, while
   stale asynchronous results are discarded safely.
-- Highlights refresh in every currently visible editor pane, including split
+- Highlights refresh in every currently **visible** editor pane, including split
   panes that do not have focus. Tabs that are open but not visible refresh when
   they become visible.
 - Added `textmarker.defaultSaveTarget` with Workspace, Global, and Prompt
@@ -28,9 +27,6 @@ currently differs from the original plugin in these areas:
 - Added optional user-defined highlight colors through `textmarker.userColor`
   and `textmarker.useUserColor`.
 - Uses the One Half Dark accent palette by default.
-
-Upstream behavior and features may continue to evolve independently. This
-README describes this distribution, not the upstream release.
 
 ## Features
 
@@ -42,9 +38,7 @@ README describes this distribution, not the upstream release.
 - Update existing highlight rules.
 - Jump to the next or previous occurrence of the same highlight rule.
 - Configure highlight colors, opacity, ruler colors, and status-bar buttons.
-- Save highlights and restore them when an editor opens.
-- Choose whether saved highlights go to Workspace settings, Global settings,
-  or a target selected through a prompt.
+- Save highlights and restore them when an editor opens, and can choose the saving place.
 - Optionally save all highlights whenever **Toggle Highlight** adds or removes
   a rule.
 
