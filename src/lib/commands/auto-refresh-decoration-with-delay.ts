@@ -5,6 +5,14 @@ import Debouncer from '../debouncer';
 import DecorationOperatorFactory from '../decoration/decoration-operator-factory';
 import TextEditor from '../vscode/text-editor';
 
+type DocumentChange = {
+    readonly document: {
+        readonly uri: {
+            readonly toString: () => string;
+        };
+    };
+};
+
 export default class AutoRefreshDecorationWithDelay implements CommandLike {
     private readonly decorationOperatorFactory: DecorationOperatorFactory;
     private readonly debouncer: Debouncer;
@@ -21,8 +29,11 @@ export default class AutoRefreshDecorationWithDelay implements CommandLike {
         this.logger = logger;
     }
 
-    execute() {
+    execute(target?: TextEditor | DocumentChange) {
+        const change = target && 'document' in target ? target : undefined;
         const editor = this.windowComponent.activeTextEditor;
+        const changedDocumentId = change && change.document.uri.toString();
+        if (changedDocumentId && (!editor || editor.id !== changedDocumentId)) return;
         if (editor) {
             try {
                 this.refreshNearby(editor);
@@ -33,7 +44,9 @@ export default class AutoRefreshDecorationWithDelay implements CommandLike {
         this.debouncer.debounce(() => {
             try {
                 const currentEditor = this.windowComponent.activeTextEditor;
-                if (currentEditor) this.refresh(currentEditor);
+                if (currentEditor && (!changedDocumentId || currentEditor.id === changedDocumentId)) {
+                    this.refresh(currentEditor);
+                }
             } catch (e) {
                 this.logger.error(e instanceof Error ? e.stack || e.message : String(e));
             }
@@ -41,7 +54,8 @@ export default class AutoRefreshDecorationWithDelay implements CommandLike {
     }
 
     private refresh(editor: TextEditor) {
-        const decorationOperator = this.decorationOperatorFactory.createForVisibleEditors();
+        const editors = this.windowComponent.visibleTextEditors.filter(visibleEditor => visibleEditor.id === editor.id);
+        const decorationOperator = this.decorationOperatorFactory.create(editors.length > 0 ? editors : [editor]);
         decorationOperator.refreshDecorations();
     }
 

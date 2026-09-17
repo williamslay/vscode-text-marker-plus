@@ -12,7 +12,7 @@ suite('AutoRefreshDecorationWithDelay', () => {
 
     test('it refreshes text markups but debounce the execution', () => {
         const editor = mock(TextEditor);
-        const windowComponent = mockType<WindowComponent>({activeTextEditor: editor});
+        const windowComponent = mockType<WindowComponent>({activeTextEditor: editor, visibleTextEditors: [editor]});
         const logger = mockType<Logger>();
         const decorationOperator = mock(DecorationOperator);
         const decorationOperatorFactory = mock(DecorationOperatorFactory);
@@ -29,13 +29,27 @@ suite('AutoRefreshDecorationWithDelay', () => {
 
     test('it does nothing if editor is not given when invoked', () => {
         const editor = undefined;
-        const windowComponent = mockType<WindowComponent>({activeTextEditor: editor});
+        const windowComponent = mockType<WindowComponent>({activeTextEditor: editor, visibleTextEditors: [editor]});
         const logger = mockType<Logger>({error: () => {}});
         const decorationOperatorFactory = mock(DecorationOperatorFactory);
         const debouncer = mock(Debouncer);
         when(debouncer.debounce(callback)).thenCallback();
         new AutoRefreshDecorationWithDelay(decorationOperatorFactory, debouncer, windowComponent, logger).execute();
         verify(decorationOperatorFactory.create(any()), {times: 0});
+    });
+
+    test('it does nothing when a background document changes', () => {
+        const editor = mockType<TextEditor>({id: 'ACTIVE'});
+        const windowComponent = mockType<WindowComponent>({activeTextEditor: editor});
+        const logger = mockType<Logger>();
+        const decorationOperatorFactory = mock(DecorationOperatorFactory);
+        const debouncer = mock(Debouncer);
+        const refresher = new AutoRefreshDecorationWithDelay(decorationOperatorFactory, debouncer, windowComponent, logger);
+
+        refresher.execute({document: {uri: {toString: () => 'BACKGROUND'}}});
+
+        verify(decorationOperatorFactory.create(any()), {times: 0});
+        verify(debouncer.debounce(callback), {times: 0});
     });
 
     test('it logs error if an exception occurred', () => {
