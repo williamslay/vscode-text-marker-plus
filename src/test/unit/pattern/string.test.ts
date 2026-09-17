@@ -94,6 +94,20 @@ suite('StringPattern', () => {
         ]);
     });
 
+    test('it returns non-overlapping matches without losing their order', () => {
+        const pattern = new StringPattern({phrase: 'aa'});
+        const ranges = pattern.locateIn('aaaaa');
+        assert.deepEqual(ranges, [
+            {start: 0, end: 2},
+            {start: 2, end: 4}
+        ]);
+    });
+
+    test('it returns no ranges for an empty phrase', () => {
+        const pattern = new StringPattern({phrase: ''});
+        assert.deepEqual(pattern.locateIn('TEXT'), []);
+    });
+
     test('it recognise the same pattern', () => {
         const pattern1 = new StringPattern({
             phrase: 'PHRASE'

@@ -10,22 +10,19 @@ export default class StringPattern extends Pattern {
     }
 
     protected findCandidateRanges(text: string): FlatRange[] {
-        const memo = {
-            ranges: [] as FlatRange[],
-            lastOffset: 0
-        };
-        const textInFrontOfSelectedText = this.getTextForComparison(text)
-            .split(this.getPhraseForComparison())
-            .slice(0, -1);
-        const finalMemo = textInFrontOfSelectedText.reduce((memo, textInFront) => {
-            const start = memo.lastOffset + textInFront.length;
-            const end = start + this.phrase.length;
-            return {
-                ranges: memo.ranges.concat({start, end}),
-                lastOffset: end
-            };
-        }, memo);
-        return finalMemo.ranges;
+        const phrase = this.getPhraseForComparison();
+        if (!phrase) return [];
+
+        const comparedText = this.getTextForComparison(text);
+        const ranges: FlatRange[] = [];
+        let searchOffset = 0;
+        let start = comparedText.indexOf(phrase, searchOffset);
+        while (start !== -1) {
+            ranges.push({start, end: start + this.phrase.length});
+            searchOffset = start + phrase.length;
+            start = comparedText.indexOf(phrase, searchOffset);
+        }
+        return ranges;
     }
 
     private getPhraseForComparison() {
