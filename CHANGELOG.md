@@ -6,6 +6,14 @@ project.
 
 ## Unreleased
 
+## 1.0.2 - 2026-09-17
+
+### Changed
+
+- Updated the development and CI toolchain to Node.js 22.
+- Replaced TSLint with ESLint and TypeScript ESLint.
+- Updated TypeScript and Node.js type definitions.
+
 ## 1.0.0 - 2026-09-16
 
 ### Added
