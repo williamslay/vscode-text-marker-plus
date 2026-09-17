@@ -27,6 +27,7 @@ __*/**/*
 .DS_Store
 *.vsix
 tslint.json
+eslint.config.js
 out/test/**
 out/**/*.map
 src/**/*
