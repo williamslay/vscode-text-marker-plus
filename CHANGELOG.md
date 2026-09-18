@@ -6,6 +6,15 @@ project.
 
 ## Unreleased
 
+## 1.0.4 - 2026-09-18
+
+### Fixed
+
+- Refresh the active editor after startup restoration when VS Code has not yet
+  populated its visible-editor list during reload.
+- Refreshed all saved highlights after startup restoration so current editors
+  display highlights immediately after reload.
+
 ## 1.0.3 - 2026-09-17
 
 ### Changed

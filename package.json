@@ -2,7 +2,7 @@
   "name": "text-marker-Plus",
   "displayName": "Text Marker Plus",
   "description": "Select text in your code and mark all matches, and the highlight colour is configurable with better performance",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "Williamslay",
   "license": "SEE LICENSE IN LICENSE.txt",
   "icon": "images/text-marker-plus.png",
