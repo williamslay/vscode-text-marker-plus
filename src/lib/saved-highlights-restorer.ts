@@ -36,6 +36,7 @@ export default class SavedHighlightsRestorer {
         const decorationsData = this.configStore.savedHighlights;
         const decorationOperator = this.decorationOperatorFactory.createForVisibleEditors();
         decorationsData.forEach(decorationData => this.addDecoration(decorationData, decorationOperator));
+        decorationOperator.refreshDecorations();
     }
 
     private addDecoration(decorationData: Highlight, decorationOperator: DecorationOperator) {

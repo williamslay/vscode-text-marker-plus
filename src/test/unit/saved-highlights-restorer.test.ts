@@ -36,6 +36,7 @@ suite('SavedHighlightsRestorer', () => {
                 ignoreCase: false,
                 wholeMatch: false
             }), '#F7E4B3'));
+            verify(decorationOperator.refreshDecorations());
             done();
         });
 
