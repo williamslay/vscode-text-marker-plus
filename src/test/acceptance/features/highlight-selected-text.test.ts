@@ -3,7 +3,7 @@ import {verify} from '../../helpers/mock';
 import AppIntegrator from '../../../lib/app-integrator';
 import {createFakeEditor} from '../helpers/fake-editor';
 import {createFakeVsCode, EXECUTION_CONTEXT} from '../helpers/fake-vscode';
-import {Position, Range} from 'vscode';
+import {Position, Range, TextEditorDecorationType} from 'vscode';
 
 suite('Highlight command', () => {
 
@@ -60,5 +60,30 @@ suite('Highlight command', () => {
 
         verify(editor1.setDecorations('DECORATION_TYPE_1', []));
         verify(editor2.setDecorations('DECORATION_TYPE_1', []));
+    });
+
+    test('restores saved highlights when active editor is not yet visible at startup', async () => {
+        const editor = createFakeEditor({wholeText: 'A TEXT B'});
+        const startupVscode = createFakeVsCode({
+            editors: [],
+            activeEditor: editor,
+            savedHighlights: [{
+                pattern: {
+                    type: 'string',
+                    expression: 'TEXT',
+                    ignoreCase: false,
+                    wholeMatch: false
+                },
+                color: 'COLOUR_A'
+            }]
+        });
+        AppIntegrator.create(startupVscode, console).integrate(EXECUTION_CONTEXT);
+
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        const decorationType = 'DECORATION_TYPE_1' as unknown as TextEditorDecorationType;
+        verify(editor.setDecorations(decorationType, [
+            new Range(new Position(0, 2), new Position(0, 6))
+        ]));
     });
 });

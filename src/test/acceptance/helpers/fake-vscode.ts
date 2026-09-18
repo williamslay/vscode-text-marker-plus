@@ -1,11 +1,11 @@
 import {stubReturns} from '../../helpers/mock';
 import {Range} from 'vscode';
 
-export const createFakeVsCode = ({editors}: any = {}) => {
+export const createFakeVsCode = ({editors = [], activeEditor, savedHighlights = []}: any = {}) => {
     const commands = {} as any;
     const textMarkerConfig = {
         highlightColors: ['COLOUR_A', 'COLOUR_B'],
-        savedHighlights: [] as any[]
+        savedHighlights
     } as any;
     return {
         _startPos: undefined,
@@ -16,7 +16,8 @@ export const createFakeVsCode = ({editors}: any = {}) => {
             onDidChangeVisibleTextEditors: () => {},
             createStatusBarItem: () => ({show: () => {}}),
             createTextEditorDecorationType: createTextEditorDecorationTypeStub(),
-            visibleTextEditors: editors
+            visibleTextEditors: editors,
+            activeTextEditor: activeEditor || editors[0]
         },
         workspace: {
             onDidChangeTextDocument: () => {},
