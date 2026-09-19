@@ -11,6 +11,11 @@ import {FlatRange} from './flat-range';
 
 const FAST_REFRESH_LINE_RADIUS = 100;
 
+export type TextSlice = {
+    text: string;
+    offset: number;
+};
+
 export default class TextEditor {
     private readonly editor: VsTextEditor;
     private readonly selectedTextFinder: SelectedTextFinder;
@@ -34,6 +39,22 @@ export default class TextEditor {
 
     get wholeText() {
         return this.editor.document.getText();
+    }
+
+    get visibleTexts(): TextSlice[] {
+        if (!this.editor.visibleRanges) return [{text: this.wholeText, offset: 0}];
+        return this.editor.visibleRanges.map(range => {
+            const startLine = Math.max(0, range.start.line - 1);
+            const endLine = Math.min(this.editor.document.lineCount - 1, range.end.line + 1);
+            const expandedRange = new Range(
+                new Position(startLine, 0),
+                new Position(endLine, this.editor.document.lineAt(endLine).text.length)
+            );
+            return {
+                text: this.editor.document.getText(expandedRange),
+                offset: this.editor.document.offsetAt(expandedRange.start)
+            };
+        });
     }
 
     get nearbyTexts() {

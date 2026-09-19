@@ -36,6 +36,22 @@ suite('TextEditor', () => {
         assert.deepEqual(new TextEditor(visibleEditor).nearbyTexts, [{text: 'VISIBLE\nVISIBLE\nVISIBLE', offset: 100}]);
     });
 
+    test('returns text for visible ranges with document offsets', () => {
+        const visibleRange = range(position(2, 1), position(2, 8));
+        const visibleDocument = mockType<TextDocument>({
+            lineCount: 5,
+            lineAt: (line: number) => ({text: `LINE_${line}`}),
+            getText: () => 'VISIBLE_WITH_OVERLAP',
+            offsetAt: (requestedPosition: Position) => requestedPosition.line === 1 ? 21 : 0
+        });
+        const visibleEditor = mockMethods<VsTextEditor>([], {
+            document: visibleDocument,
+            visibleRanges: [visibleRange]
+        });
+
+        assert.deepEqual(new TextEditor(visibleEditor).visibleTexts, [{text: 'VISIBLE_WITH_OVERLAP', offset: 21}]);
+    });
+
     function position(line: number, character: number): Position {
         return {line, character} as Position;
     }
