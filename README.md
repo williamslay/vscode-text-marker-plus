@@ -28,6 +28,35 @@ currently differs from the original plugin in these areas:
   and `textmarker.useUserColor`.
 - Uses the One Half Dark accent palette by default.
 
+<p align="left">
+  <img src="./images/normal.gif" width="1000">
+</p>
+
+> **Normal runtime behavior:** The visible editor region is highlighted first,
+> while matches elsewhere are completed asynchronously in the background.
+
+<p align="left">
+  <img src="./images/performance.gif" width="1000">
+</p>
+
+> [!NOTE]
+> **Staged rendering demonstration**
+>
+> This GIF was recorded with an intentional **5-second delay** inserted before
+> background full-document matching. The delay exists only to make the staged
+> rendering behavior clearly visible.
+>
+> Please compare:
+>
+> - highlights inside the currently visible editor area;
+> - highlights shown elsewhere in the sidebar or overview ruler.
+>
+> The visible editor area is highlighted first. Highlights outside the current
+> area appear after asynchronous background matching completes.
+>
+> The 5-second delay is **not part of normal runtime behavior**. This GIF
+> demonstrates progressive rendering order, not production matching latency.
+
 ## Features
 
 - Highlight or unhighlight selected text, or the word under the cursor.
