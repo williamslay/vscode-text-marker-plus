@@ -4,12 +4,15 @@ import {Worker} from 'worker_threads';
 import {FlatRange} from '../vscode/flat-range';
 import Pattern from '../pattern/pattern';
 import {matchText, WorkerPattern, WorkerRequest, WorkerResponse} from './worker-matcher';
+import {Logger} from '../Logger';
 
 export type FullMatchRequest = {
     uri: string;
     version: number;
     text: string;
     pattern: WorkerPattern;
+    scopeStart?: number;
+    scopeEnd?: number;
 };
 
 export interface FullMatchService {
@@ -29,6 +32,7 @@ type PendingMatch = {
     requestKey: string;
     uri: string;
     version: number;
+    timeout: ReturnType<typeof setTimeout>;
     resolve: (ranges: FlatRange[]) => void;
     reject: (error: Error) => void;
 };
@@ -36,6 +40,7 @@ type PendingMatch = {
 export type FullMatchCacheOptions = {
     readonly maxEntries?: number;
     readonly maxRanges?: number;
+    readonly timeoutMs?: number;
 };
 
 type CacheEntry = {
@@ -46,6 +51,7 @@ type CacheEntry = {
 
 const DEFAULT_MAX_CACHE_ENTRIES = 128;
 const DEFAULT_MAX_CACHED_RANGES = 100000;
+const DEFAULT_MATCH_TIMEOUT_MS = 3000;
 
 export function patternFor(pattern: Pattern): WorkerPattern {
     return {
@@ -76,7 +82,10 @@ export class InlineMatchService implements FullMatchService {
 }
 
 export class FullMatchWorkerService implements FullMatchService {
-    private readonly worker: MatchWorker;
+    private readonly createWorker: () => MatchWorker;
+    private readonly logger?: Logger;
+    private readonly timeoutMs: number;
+    private worker: MatchWorker;
     private readonly cache: Map<string, CacheEntry>;
     private readonly pending: Map<number, PendingMatch>;
     private readonly pendingByKey: Map<string, Promise<FlatRange[]>>;
@@ -88,9 +97,11 @@ export class FullMatchWorkerService implements FullMatchService {
     private disposed: boolean;
 
     constructor(createWorker: () => MatchWorker = createDefaultWorker,
-                options: FullMatchCacheOptions = {}) {
-        this.worker = createWorker();
-        if (this.worker.unref) this.worker.unref();
+                options: FullMatchCacheOptions = {},
+                logger?: Logger) {
+        this.createWorker = createWorker;
+        this.logger = logger;
+        this.timeoutMs = options.timeoutMs || DEFAULT_MATCH_TIMEOUT_MS;
         this.cache = new Map();
         this.pending = new Map();
         this.pendingByKey = new Map();
@@ -100,17 +111,8 @@ export class FullMatchWorkerService implements FullMatchService {
         this.nextRequestId = 0;
         this.cachedRangeCount = 0;
         this.disposed = false;
-        this.worker.on('message', message => this.handleMessage(message));
-        this.worker.on('error', (...args: unknown[]) => {
-            const error = args[0];
-            this.failPending(error instanceof Error ? error : new Error(String(error)));
-        });
-        this.worker.on('exit', (...args: unknown[]) => {
-            const code = args[0];
-            if (typeof code === 'number' && code !== 0 && !this.disposed) {
-                this.failPending(new Error(`Full match worker exited with code ${code}`));
-            }
-        });
+        this.worker = this.createWorker();
+        this.attachWorker(this.worker);
     }
 
     match(request: FullMatchRequest): Promise<FlatRange[]> {
@@ -136,6 +138,7 @@ export class FullMatchWorkerService implements FullMatchService {
                 requestKey,
                 uri: request.uri,
                 version: request.version,
+                timeout: setTimeout(() => this.handleTimeout(requestId), this.timeoutMs),
                 resolve,
                 reject
             });
@@ -144,14 +147,8 @@ export class FullMatchWorkerService implements FullMatchService {
         try {
             this.worker.postMessage({requestId, pattern: request.pattern, text: request.text});
         } catch (error) {
-            const pending = this.pending.get(requestId);
-            this.pending.delete(requestId);
-            this.pendingByKey.delete(requestKey);
             const pendingError = error instanceof Error ? error : new Error(String(error));
-            if (pending) {
-                pending.reject(pendingError);
-                this.removeUnusedVersion(cacheKey);
-            }
+            this.handleWorkerFailure(pendingError);
         }
         return promise;
     }
@@ -168,7 +165,9 @@ export class FullMatchWorkerService implements FullMatchService {
     }
 
     private getCacheKey(request: FullMatchRequest): string {
-        return `${request.uri}\u0000${patternFingerprint(request.pattern)}`;
+        const scopeStart = request.scopeStart || 0;
+        const scopeEnd = request.scopeEnd === undefined ? request.text.length : request.scopeEnd;
+        return `${request.uri}\u0000${patternFingerprint(request.pattern)}\u0000${scopeStart}:${scopeEnd}`;
     }
 
     private getRequestKey(cacheKey: string, version: number): string {
@@ -179,9 +178,11 @@ export class FullMatchWorkerService implements FullMatchService {
         if (!isWorkerResponse(value)) return;
         const pending = this.pending.get(value.requestId);
         if (!pending) return;
+        clearTimeout(pending.timeout);
         this.pending.delete(value.requestId);
         this.pendingByKey.delete(pending.requestKey);
         if ('error' in value) {
+            this.logger?.warn(`Full match request failed: ${value.error}`);
             pending.reject(new Error(value.error));
             this.removeUnusedVersion(pending.cacheKey);
             return;
@@ -194,9 +195,52 @@ export class FullMatchWorkerService implements FullMatchService {
     }
 
     private failPending(error: Error): void {
-        this.pending.forEach(item => item.reject(error));
+        this.pending.forEach(item => {
+            clearTimeout(item.timeout);
+            item.reject(error);
+        });
         this.pending.clear();
         this.pendingByKey.clear();
+    }
+
+    private attachWorker(worker: MatchWorker): void {
+        if (worker.unref) worker.unref();
+        worker.on('message', message => {
+            if (this.worker === worker) this.handleMessage(message);
+        });
+        worker.on('error', (...args: unknown[]) => {
+            if (this.worker !== worker) return;
+            const error = args[0];
+            this.handleWorkerFailure(error instanceof Error ? error : new Error(String(error)));
+        });
+        worker.on('exit', (...args: unknown[]) => {
+            if (this.worker !== worker || this.disposed) return;
+            const code = args[0];
+            this.handleWorkerFailure(new Error(`Full match worker exited with code ${String(code)}`));
+        });
+    }
+
+    private handleTimeout(requestId: number): void {
+        if (!this.pending.has(requestId)) return;
+        const error = new Error(`Full match request timed out after ${this.timeoutMs}ms`);
+        this.logger?.warn(error.message);
+        this.failPending(error);
+        this.replaceWorker();
+    }
+
+    private handleWorkerFailure(error: Error): void {
+        if (this.disposed) return;
+        this.logger?.error(error.message);
+        this.failPending(error);
+        this.replaceWorker();
+    }
+
+    private replaceWorker(): void {
+        if (this.disposed) return;
+        const previousWorker = this.worker;
+        this.worker = this.createWorker();
+        this.attachWorker(this.worker);
+        void previousWorker.terminate();
     }
 
     private recordLatestVersion(cacheKey: string, version: number): void {

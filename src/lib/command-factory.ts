@@ -210,7 +210,7 @@ export default class CommandFactory {
     }
 
     private getFullMatchService(): FullMatchWorkerService {
-        this.fullMatchService = this.fullMatchService || new FullMatchWorkerService();
+        this.fullMatchService = this.fullMatchService || new FullMatchWorkerService(undefined, {}, this.logger);
         return this.fullMatchService;
     }
 

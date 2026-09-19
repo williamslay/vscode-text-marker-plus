@@ -4,6 +4,8 @@ import RegexPattern from '../../../lib/pattern/regex';
 import {FullMatchRequest, FullMatchWorkerService, MatchWorker, patternFor} from '../../../lib/matching/full-match-service';
 import {WorkerRequest} from '../../../lib/matching/worker-matcher';
 import {matchText} from '../../../lib/matching/worker-matcher';
+import {Logger} from '../../../lib/Logger';
+import {contains, mockMethods, verify} from '../../helpers/mock';
 
 suite('FullMatchWorkerService', () => {
     test('matches with existing string and regex semantics', () => {
@@ -34,6 +36,18 @@ suite('FullMatchWorkerService', () => {
         await service.match(createRequest('URI', 2, new StringPattern({phrase: 'OTHER'})));
 
         assert.equal(worker.postCount, 3);
+        service.dispose();
+    });
+
+    test('does not reuse a viewport result for a different match scope', async () => {
+        const worker = new FakeWorker();
+        const service = new FullMatchWorkerService(() => worker);
+        const pattern = patternFor(new StringPattern({phrase: 'TEXT'}));
+
+        await service.match({uri: 'URI', version: 1, text: 'TEXT', pattern, scopeStart: 0, scopeEnd: 4});
+        await service.match({uri: 'URI', version: 1, text: 'OTHER TEXT', pattern, scopeStart: 10, scopeEnd: 20});
+
+        assert.equal(worker.postCount, 2);
         service.dispose();
     });
 
@@ -96,6 +110,29 @@ suite('FullMatchWorkerService', () => {
         service.dispose();
     });
 
+    test('times out a stuck worker request and replaces the worker', async () => {
+        const firstWorker = new HangingWorker();
+        const secondWorker = new FakeWorker();
+        const workers = [firstWorker, secondWorker];
+        const logger = mockMethods<Logger>(['error', 'warn']);
+        let workerIndex = 0;
+        const service = new FullMatchWorkerService(
+            () => workers[workerIndex++],
+            {timeoutMs: 1},
+            logger
+        );
+
+        await assert.rejects(
+            service.match(createRequest('URI', 1, new StringPattern({phrase: 'TEXT'}))),
+            /timed out/
+        );
+
+        verify(logger.warn(contains('timed out')));
+        assert.equal(firstWorker.terminateCount, 1);
+        assert.equal(workerIndex, 2);
+        service.dispose();
+    });
+
     function createRequest(uri: string, version: number, pattern: StringPattern): FullMatchRequest {
         return {uri, version, text: 'TEXT', pattern: patternFor(pattern)};
     }
@@ -145,6 +182,23 @@ class DeferredWorker implements MatchWorker {
     }
 
     terminate(): Promise<number> {
+        return Promise.resolve(0);
+    }
+}
+
+class HangingWorker implements MatchWorker {
+    terminateCount = 0;
+
+    postMessage(_request: WorkerRequest): void {
+        return;
+    }
+
+    on(_event: string, _listener: (...args: unknown[]) => void): MatchWorker {
+        return this;
+    }
+
+    terminate(): Promise<number> {
+        this.terminateCount += 1;
         return Promise.resolve(0);
     }
 }
