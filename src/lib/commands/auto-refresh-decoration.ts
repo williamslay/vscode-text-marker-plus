@@ -19,8 +19,13 @@ export default class AutoRefreshDecoration implements CommandLike {
     }
 
     refreshVisibleEditors() {
+        const editors = this.windowComponent.visibleTextEditors;
+        if (editors.length > 0) {
+            this.decorationOperatorFactory.create(editors).refreshDecorations();
+            return;
+        }
         const editor = this.windowComponent.activeTextEditor;
-        if (editor) this.createForActiveDocument(editor).refreshDecorations();
+        if (editor) this.decorationOperatorFactory.create([editor]).refreshDecorations();
     }
 
     private createForActiveDocument(editor: TextEditor) {

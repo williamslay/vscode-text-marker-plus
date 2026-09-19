@@ -41,6 +41,21 @@ suite('AutoRefreshDecoration', () => {
         verify(decorationOperator.refreshDecorations());
     });
 
+    test('it refreshes non-active visible editors too', () => {
+        const otherEditor = {id: 'OTHER'} as TextEditor;
+        const windowComponent = mockType<WindowComponent>({
+            activeTextEditor: editor,
+            visibleTextEditors: [editor, otherEditor]
+        });
+        const decorationOperatorFactory = mock(DecorationOperatorFactory);
+        when(decorationOperatorFactory.create([editor, otherEditor])).thenReturn(decorationOperator);
+        const visibleEditorCommand = new AutoRefreshDecoration(decorationOperatorFactory, windowComponent);
+
+        visibleEditorCommand.refreshVisibleEditors();
+
+        verify(decorationOperatorFactory.create([editor, otherEditor]));
+    });
+
     test('it refreshes only visible panes for the active document', () => {
         const otherEditor = {id: 'BACKGROUND'} as TextEditor;
         const windowComponent = mockType<WindowComponent>({
