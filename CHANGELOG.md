@@ -4,7 +4,31 @@ This changelog records changes made in this independently maintained
 distribution. It does not reproduce the update history of the upstream
 project.
 
+Known issues are tracked separately in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+
 ## Unreleased
+
+## 1.0.5 - 2026-09-19
+
+### Changed
+
+- Prioritized matching and highlighting for visible editor ranges before
+  completing the remaining document asynchronously in the background.
+- Added overlapping boundaries to background matching ranges so matches at
+  visible-range edges are not missed.
+- Scoped full-match cache entries by document range to prevent viewport results
+  from being reused as full-document results.
+
+### Fixed
+
+- Refreshed all currently visible editor panes, including non-active split
+  panels, during full decoration refreshes.
+- Prevented stale viewport and background results from replacing newer refresh
+  results.
+- Added full-match worker timeout handling and worker replacement after timeout,
+  errors, or unexpected exit.
+- Added bounded handling for expensive regular-expression matching so a stuck
+  worker cannot block matching indefinitely.
 
 ## 1.0.4 - 2026-09-18
 
@@ -24,18 +48,6 @@ project.
 - Replaced versioned cache entries with one version-checked entry per document
   and highlight rule, while retaining bounded LRU eviction.
 - Replaced allocation-heavy literal range construction with linear scanning.
-
-## Known Issues
-
-- In-flight full-document match requests are not cancelled when a newer
-  refresh supersedes them; stale results are discarded after computation.
-- Refreshes still scale with the number of visible editors and highlight rules,
-  and related editor/document events can schedule duplicate work.
-- The shared refresh generation can invalidate unrelated asynchronous highlight
-  results when several rules are refreshed together.
-- User-supplied regular expressions can require excessive CPU time because
-  matching has no timeout or complexity limit.
-- Full-match worker failure recovery and restart handling remain incomplete.
 
 ## 1.0.2 - 2026-09-17
 

@@ -1,8 +1,8 @@
 {
   "name": "text-marker-Plus",
   "displayName": "Text Marker Plus",
-  "description": "Select text in your code and mark all matches, and the highlight colour is configurable with better performance",
-  "version": "1.0.4",
+  "description": "Select text in your code and mark all matches with configurable highlight colour. And this plugin offers a smooth user experience",
+  "version": "1.0.5",
   "publisher": "Williamslay",
   "license": "SEE LICENSE IN LICENSE.txt",
   "icon": "images/text-marker-plus.png",
