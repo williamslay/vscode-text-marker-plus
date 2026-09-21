@@ -21,18 +21,13 @@ export default class DecorationOperator {
         this.fullRefresh = Promise.resolve();
     }
 
-    addDecoration(pattern: Pattern, colour?: string, refreshNearby = false): boolean {
+    addDecoration(pattern: Pattern, colour?: string): boolean {
         return pipe(
             this.decorationRegistry.issue(pattern, colour),
             O.fold(
                 () => false,
                 decoration => {
-                    if (refreshNearby) {
-                        this.textDecorator.decorateNearby(this.editors, [decoration]);
-                        this.fullRefresh = this.textDecorator.decorate(this.editors, [decoration]);
-                    } else {
-                        this.fullRefresh = this.textDecorator.decorate(this.editors, [decoration]);
-                    }
+                    this.fullRefresh = this.textDecorator.decorate(this.editors, [decoration]);
                     return true;
                 }
             )
@@ -74,11 +69,6 @@ export default class DecorationOperator {
     refreshDecorations() {
         const decorations = this.decorationRegistry.retrieveAll();
         this.fullRefresh = this.textDecorator.decorate(this.editors, decorations);
-    }
-
-    refreshNearbyDecorations() {
-        const decorations = this.decorationRegistry.retrieveAll();
-        this.textDecorator.decorateNearby(this.editors, decorations);
     }
 
     waitForFullRefresh(): Promise<void> {
