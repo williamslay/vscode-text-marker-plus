@@ -8,6 +8,15 @@ Known issues are tracked separately in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
 ## Unreleased
 
+## 1.0.6 - 2026-09-21
+
+### Changed
+
+- Use one staged refresh for active-document changes: visible ranges are
+  refreshed first, followed by remaining document ranges in the background.
+- Removed nearby refreshes, the 300ms refresh delay, and
+  `textmarker.delayForRefreshingHighlight`.
+
 ## 1.0.5 - 2026-09-19
 
 ### Changed

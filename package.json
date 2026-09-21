@@ -2,7 +2,7 @@
   "name": "text-marker-Plus",
   "displayName": "Text Marker Plus",
   "description": "Select text in your code and mark all matches with configurable highlight colour. And this plugin offers a smooth user experience",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "publisher": "Williamslay",
   "license": "SEE LICENSE IN LICENSE.txt",
   "icon": "images/text-marker-plus.png",
@@ -98,14 +98,6 @@
           "description": "Hide buttons on the status bar",
           "type": "boolean",
           "default": false
-        },
-        "textmarker.delayForRefreshingHighlight": {
-          "description": "Number of milliseconds to wait before refreshing the highlights on editor contents change. null for no refresh",
-          "type": [
-            "number",
-            "null"
-          ],
-          "default": 300
         },
         "textmarker.commandsOnContextMenu": {
           "description": "Commands appear on the context menu",
@@ -363,7 +355,6 @@
     "color-name": "1.1.4",
     "color-rgba": "2.2.3",
     "fp-ts": "2.9.0",
-    "lodash.isnumber": "3.0.3",
     "uuid": "11.1.1"
   },
   "resolutions": {
