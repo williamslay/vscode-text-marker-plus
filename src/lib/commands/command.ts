@@ -1,4 +1,4 @@
-import {CommandLike} from '../vscode/vscode';
+import {CommandLike, DocumentChangeLike} from '../vscode/vscode';
 import {Logger} from '../Logger';
 import * as vscode from 'vscode';
 import TextEditor from '../vscode/text-editor';
@@ -24,6 +24,14 @@ class CommandWrapper {
     refreshVisibleEditors() {
         try {
             if (this.command.refreshVisibleEditors) this.command.refreshVisibleEditors();
+        } catch (e) {
+            this.logger.error(e instanceof Error ? e.stack || e.message : String(e));
+        }
+    }
+
+    executeDocumentChange(change: DocumentChangeLike) {
+        try {
+            if (this.command.executeDocumentChange) this.command.executeDocumentChange(change);
         } catch (e) {
             this.logger.error(e instanceof Error ? e.stack || e.message : String(e));
         }
