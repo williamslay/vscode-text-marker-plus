@@ -37,8 +37,7 @@ suite('TextDecorator full-match races', () => {
             id: 'EDITOR',
             version: 1,
             wholeText: 'BEFORE VISIBLE AFTER',
-            visibleTexts: [{text: 'VISIBLE', offset: 7}],
-            nearbyTexts: [{text: 'VISIBLE', offset: 7}]
+            visibleTexts: [{text: 'VISIBLE', offset: 7}]
         });
         const decoration = new Decoration('DECORATION', new StringPattern({phrase: 'VISIBLE'}), 'pink');
         const decorationType = mockType<TextEditorDecorationType>();
@@ -47,12 +46,18 @@ suite('TextDecorator full-match races', () => {
         const decorator = new TextDecorator(new TextLocationRegistry(), types, service);
 
         const refresh = decorator.decorate([editor], [decoration]);
-        decorator.decorateNearby([editor], [decoration]);
+        const newerRefresh = decorator.decorate([editor], [decoration]);
+        const complementRequests = service.waitForRequestCount(4);
         service.resolve(0, []);
+        service.resolve(1, []);
+        await complementRequests;
+        service.resolve(2, []);
+        service.resolve(3, []);
         await refresh;
+        await newerRefresh;
         await Promise.resolve();
 
-        assert.deepEqual(service.requests, ['VISIBLE']);
+        assert.deepEqual(service.requests, ['VISIBLE', 'VISIBLE', 'E AFTER', 'BEFORE V']);
     });
 
     test('does not apply result after decoration removal', async () => {
@@ -75,21 +80,6 @@ suite('TextDecorator full-match races', () => {
 
         verify(editor.setDecorations(decorationType, [{start: 0, end: 4}]), {times: 0});
         assert.deepEqual(registry.queryDecorationId('EDITOR', {start: 0, end: 0}, 1), none);
-    });
-
-    test('keeps nearby ranges visual-only', () => {
-        const editor = mockMethods<TextEditor>(['setDecorations'], {
-            id: 'EDITOR', version: 1, nearbyTexts: [{text: 'TEXT', offset: 10}]
-        });
-        const decoration = new Decoration('DECORATION', new StringPattern({phrase: 'TEXT'}), 'pink');
-        const decorationType = mockType<TextEditorDecorationType>();
-        const types = mock(DecorationTypeRegistry);
-        when(types.provideFor(decoration)).thenReturn(decorationType);
-        const registry = new TextLocationRegistry();
-        new TextDecorator(registry, types).decorateNearby([editor], [decoration]);
-
-        verify(editor.setDecorations(decorationType, [{start: 10, end: 14}]));
-        assert.deepEqual(registry.queryDecorationId('EDITOR', {start: 10, end: 10}, 1), none);
     });
 
     test('ignores an older full result after a newer refresh starts', async () => {
@@ -118,12 +108,23 @@ suite('TextDecorator full-match races', () => {
 
 class DeferredMatchService implements FullMatchService {
     private readonly resolvers: Array<(ranges: FlatRange[]) => void> = [];
+    private requestWaiters: Array<{count: number; resolve: () => void}> = [];
     readonly requests: string[] = [];
 
     match(request: FullMatchRequest): Promise<FlatRange[]> {
         this.requests.push(request.text);
+        const readyWaiters = this.requestWaiters.filter(waiter => waiter.count <= this.requests.length);
+        this.requestWaiters = this.requestWaiters.filter(waiter => waiter.count > this.requests.length);
+        readyWaiters.forEach(waiter => waiter.resolve());
         return new Promise(resolve => {
             this.resolvers.push(resolve);
+        });
+    }
+
+    waitForRequestCount(count: number): Promise<void> {
+        if (this.requests.length >= count) return Promise.resolve();
+        return new Promise(resolve => {
+            this.requestWaiters.push({count, resolve});
         });
     }
 

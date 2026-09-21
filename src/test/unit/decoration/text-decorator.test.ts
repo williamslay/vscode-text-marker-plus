@@ -1,4 +1,4 @@
-import {any, mock, mockMethods, mockType, verify, when, wrapVerify} from '../../helpers/mock';
+import {mock, mockMethods, mockType, verify, when, wrapVerify} from '../../helpers/mock';
 
 import TextDecorator from '../../../lib/decoration/text-decorator';
 import PatternFactory from '../../../lib/pattern/pattern-factory';
@@ -65,20 +65,6 @@ suite('TextDecorator', () => {
             'EDITOR_ID_2', 'DECORATION_ID', 0,
             [{end: 19, start: 15}]
         ));
-    });
-
-    test('it decorates only matches near the cursor for fast refresh', () => {
-        const editor = mockMethods<TextEditor>(['setDecorations'], {
-            id: 'EDITOR_ID',
-            nearbyTexts: [{text: 'LONG', offset: 100}]
-        });
-        const textLocationRegistry = mock(TextLocationRegistry);
-        const textDecorator = new TextDecorator(textLocationRegistry, decorationTypeRegistry);
-
-        textDecorator.decorateNearby([editor], [decoration0]);
-
-        verify(editor.setDecorations(decorationType, [{start: 100, end: 104}]));
-        verify(textLocationRegistry.register(any(), any(), any(), any()), {times: 0});
     });
 
     test('it removes decorations from the pattern in the editors', () => {

@@ -61,27 +61,6 @@ export default class TextDecorator {
         return Promise.all(matches).then(() => undefined);
     }
 
-    decorateNearby(editors: TextEditor[], decorations: Decoration[]): void {
-        ++this.generation;
-        editors.forEach(editor => {
-            this.textLocationRegistry.setDocumentVersion(editor.id, editor.version || 0);
-            decorations.forEach(decoration => {
-                const visibleTexts = editor.visibleTexts;
-                const nearbyTexts = visibleTexts || editor.nearbyTexts || [{text: editor.wholeText, offset: 0}];
-                const ranges = nearbyTexts.reduce<FlatRange[]>(
-                    (allRanges, visibleText) => allRanges.concat(
-                        decoration.pattern.locateIn(visibleText.text).map(range => ({
-                            start: range.start + visibleText.offset,
-                            end: range.end + visibleText.offset
-                        }))
-                    ), []
-                );
-                const decorationType = this.decorationTypeRegistry.provideFor(decoration);
-                editor.setDecorations(decorationType, ranges);
-            });
-        });
-    }
-
     undecorate(editors: TextEditor[], decorationIds: string[]): void {
         ++this.generation;
         decorationIds.forEach(decorationId => {
