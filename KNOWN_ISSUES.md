@@ -22,3 +22,8 @@ release where issue was documented; `Fixed in` records release containing fix.
   the timeout budget. Documented since: `1.0.3`. Fixed in: `1.0.5`.
 - [x] Full-match worker failure recovery and restart handling remain incomplete.
   Documented since: `1.0.3`. Fixed in: `1.0.5`.
+- [ ] Plain-text case-insensitive matching can shift highlight ranges after
+  U+0130 (`İ`) because lowercasing expands it to two UTF-16 code units. The
+  drift grows with each preceding `İ`; case-sensitive and regex matching are
+  not affected by this specific issue. Documented since: `1.0.6`. Fixed in:
+  pending.
