@@ -21,21 +21,6 @@ suite('TextEditor', () => {
         verify(rawEditor.revealRange(range(position1, position2), TextEditorRevealType.InCenterIfOutsideViewport));
     });
 
-    test('returns nearby text with its document offset', () => {
-        const nearbyDocument = mockType<TextDocument>({
-            lineCount: 3,
-            lineAt: () => ({text: 'VISIBLE'}),
-            getText: () => 'VISIBLE\nVISIBLE\nVISIBLE',
-            offsetAt: () => 100
-        });
-        const visibleEditor = mockMethods<VsTextEditor>([], {
-            selection: {active: position(1, 2)},
-            document: nearbyDocument
-        });
-
-        assert.deepEqual(new TextEditor(visibleEditor).nearbyTexts, [{text: 'VISIBLE\nVISIBLE\nVISIBLE', offset: 100}]);
-    });
-
     test('returns text for visible ranges with document offsets', () => {
         const visibleRange = range(position(2, 1), position(2, 8));
         const visibleDocument = mockType<TextDocument>({

@@ -9,8 +9,6 @@ import {
 } from 'vscode';
 import {FlatRange} from './flat-range';
 
-const FAST_REFRESH_LINE_RADIUS = 100;
-
 export type TextSlice = {
     text: string;
     offset: number;
@@ -55,25 +53,6 @@ export default class TextEditor {
                 offset: this.editor.document.offsetAt(expandedRange.start)
             };
         });
-    }
-
-    get nearbyTexts() {
-        if (!this.editor.selection || !this.editor.document.lineCount || !this.editor.document.lineAt) {
-            return [{text: this.wholeText, offset: 0}];
-        }
-        const activeLine = this.editor.selection.active.line;
-        const startLine = Math.max(0, activeLine - FAST_REFRESH_LINE_RADIUS);
-        const endLine = Math.min(
-            this.editor.document.lineCount - 1,
-            activeLine + FAST_REFRESH_LINE_RADIUS
-        );
-        const start = new Position(startLine, 0);
-        const end = new Position(endLine, this.editor.document.lineAt(endLine).text.length);
-        const range = new Range(start, end);
-        return [{
-            text: this.editor.document.getText(range),
-            offset: this.editor.document.offsetAt(start)
-        }];
     }
 
     get selection(): FlatRange {
