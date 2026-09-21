@@ -7,7 +7,7 @@ AGENTS.md
 azure-pipelines.yml
 test_handoff.md
 typings/**/*
-images/animations/**/*
+images/*.gif
 coverage/**/*
 .nyc_output/**/*
 .codeclimate.yml

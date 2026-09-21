@@ -29,14 +29,14 @@ currently differs from the original plugin in these areas:
 - Uses the One Half Dark accent palette by default.
 
 <p align="left">
-  <img src="./images/normal.gif" width="1000">
+  <img src="https://raw.githubusercontent.com/williamslay/vscode-text-marker-plus/master/images/normal.gif" width="1000">
 </p>
 
 > **Normal runtime behavior:** The visible editor region is highlighted first,
 > while matches elsewhere are completed asynchronously in the background.
 
 <p align="left">
-  <img src="./images/performance.gif" width="1000">
+  <img src="https://raw.githubusercontent.com/williamslay/vscode-text-marker-plus/master/images/performance.gif" width="1000">
 </p>
 
 > [!NOTE]
