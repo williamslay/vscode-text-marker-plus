@@ -16,7 +16,8 @@ currently differs from the original plugin in these areas:
 
 - Full-document matching runs in a dedicated worker instead of blocking the
   VS Code Extension Host.
-- Completed matches are cached by document version and highlight rule, while
+- Completed full-document matches are cached by document version, highlight
+  rule, and match range, reducing repeated scanning during refreshes while
   stale asynchronous results are discarded safely.
 - Highlights refresh in every currently **visible** editor pane, including split
   panes that do not have focus. Tabs that are open but not visible refresh when
@@ -27,6 +28,7 @@ currently differs from the original plugin in these areas:
 - Added optional user-defined highlight colors through `textmarker.userColor`
   and `textmarker.useUserColor`.
 - Uses the One Half Dark accent palette by default.
+- Removed the upstream plugin's telemetry functionality. This extension **does not collect any information**.
 
 <p align="left">
   <img src="https://raw.githubusercontent.com/williamslay/vscode-text-marker-plus/master/images/normal.gif" width="1000">
@@ -142,8 +144,6 @@ empty.
 - `textmarker.useHighlightColorOnRuler`: use highlight colors on the ruler.
 - `textmarker.autoSelectDistinctiveTextColor`: choose contrasting text color.
 - `textmarker.hideStatusBarItems`: hide matching-mode status-bar controls.
-- `textmarker.delayForRefreshingHighlight`: refresh delay in milliseconds;
-  `null` disables refresh on document changes.
 - `textmarker.commandsOnContextMenu`: control commands shown in the context
   menu.
 

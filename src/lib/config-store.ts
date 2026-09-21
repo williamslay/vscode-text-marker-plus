@@ -37,10 +37,6 @@ export default class ConfigStore {
         return this.get<Highlight[]>('savedHighlights');
     }
 
-    get delayForRefreshingHighlight() {
-        return this.get<number>('delayForRefreshingHighlight');
-    }
-
     get useHighlightColorOnRuler() {
         return this.get<boolean>('useHighlightColorOnRuler');
     }
