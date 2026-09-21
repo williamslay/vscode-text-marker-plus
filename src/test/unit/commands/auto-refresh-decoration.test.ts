@@ -1,4 +1,4 @@
-import {mock, mockType, verify, when} from '../../helpers/mock';
+import {any, mock, mockType, verify, when} from '../../helpers/mock';
 import DecorationOperatorFactory from '../../../lib/decoration/decoration-operator-factory';
 import TextEditor from '../../../lib/vscode/text-editor';
 import DecorationOperator from '../../../lib/decoration/decoration-operator';
@@ -8,31 +8,49 @@ import WindowComponent from '../../../lib/vscode/window';
 suite('AutoRefreshDecoration', () => {
 
     let decorationOperator: DecorationOperator;
+    let decorationOperatorFactory: DecorationOperatorFactory;
     let command: AutoRefreshDecoration;
 
     const editor = {id: 'ACTIVE', selectedText: 'SELECTED'} as TextEditor;
 
     setup(() => {
         decorationOperator = mock(DecorationOperator);
-        const decorationOperatorFactory = mock(DecorationOperatorFactory);
+        decorationOperatorFactory = mock(DecorationOperatorFactory);
         when(decorationOperatorFactory.create([editor])).thenReturn(decorationOperator);
         const windowComponent = mockType<WindowComponent>({activeTextEditor: editor, visibleTextEditors: [editor]});
 
         command = new AutoRefreshDecoration(decorationOperatorFactory, windowComponent);
     });
 
-    test('it refreshes nearby decorations before the full refresh', () => {
-        command.execute(editor);
+    test('it uses one staged refresh for active-document changes', () => {
+        command.execute();
 
-        verify(decorationOperator.refreshNearbyDecorations());
         verify(decorationOperator.refreshDecorations());
     });
 
-    test('it does nothing if editor is not given when invoked', () => {
-        command.execute();
+    test('it does nothing if there is no active editor', () => {
+        const windowComponent = mockType<WindowComponent>({activeTextEditor: undefined, visibleTextEditors: []});
+        const inactiveCommand = new AutoRefreshDecoration(decorationOperatorFactory, windowComponent);
 
-        verify(decorationOperator.refreshNearbyDecorations(), {times: 0});
+        inactiveCommand.execute();
+
         verify(decorationOperator.refreshDecorations(), {times: 0});
+    });
+
+    test('it ignores changes for background documents', () => {
+        const backgroundDocument = {document: {uri: {toString: () => 'BACKGROUND'}}};
+
+        command.executeDocumentChange(backgroundDocument);
+
+        verify(decorationOperatorFactory.create(any()), {times: 0});
+    });
+
+    test('it refreshes the active document when its contents change', () => {
+        const activeDocument = {document: {uri: {toString: () => 'ACTIVE'}}};
+
+        command.executeDocumentChange(activeDocument);
+
+        verify(decorationOperator.refreshDecorations());
     });
 
     test('it refreshes every visible editor when visible panes change', () => {
@@ -66,7 +84,7 @@ suite('AutoRefreshDecoration', () => {
         when(decorationOperatorFactory.create([editor])).thenReturn(decorationOperator);
         const activeOnlyCommand = new AutoRefreshDecoration(decorationOperatorFactory, windowComponent);
 
-        activeOnlyCommand.execute(editor);
+        activeOnlyCommand.execute();
 
         verify(decorationOperatorFactory.create([editor]));
         verify(decorationOperatorFactory.createForVisibleEditors(), {times: 0});

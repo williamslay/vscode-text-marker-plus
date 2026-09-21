@@ -37,9 +37,8 @@ export default class AppIntegrator {
         this.vscode.window.onDidChangeVisibleTextEditors(
             autoRefreshDecoration.refreshVisibleEditors, autoRefreshDecoration, context.subscriptions);
 
-        const autoRefreshDecorationWithDelay = this.commandFactory.createAutoRefreshDecorationWithDelay();
         this.vscode.workspace.onDidChangeTextDocument(
-            autoRefreshDecorationWithDelay.execute, autoRefreshDecorationWithDelay, context.subscriptions);
+            autoRefreshDecoration.executeDocumentChange, autoRefreshDecoration, context.subscriptions);
 
         return autoRefreshDecoration;
     }

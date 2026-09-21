@@ -1,5 +1,5 @@
 import TextEditor from '../vscode/text-editor';
-import {CommandLike} from '../vscode/vscode';
+import {CommandLike, DocumentChangeLike} from '../vscode/vscode';
 import DecorationOperatorFactory from '../decoration/decoration-operator-factory';
 import WindowComponent from '../vscode/window';
 
@@ -12,9 +12,14 @@ export default class AutoRefreshDecoration implements CommandLike {
         this.windowComponent = windowComponent;
     }
 
-    execute(editor?: TextEditor) {
-        if (!editor) return;
-        this.decorationOperatorFactory.create([editor]).refreshNearbyDecorations();
+    execute(_editor?: TextEditor) {
+        const editor = this.windowComponent.activeTextEditor;
+        if (editor) this.createForActiveDocument(editor).refreshDecorations();
+    }
+
+    executeDocumentChange(change: DocumentChangeLike) {
+        const editor = this.windowComponent.activeTextEditor;
+        if (!editor || editor.id !== change.document.uri.toString()) return;
         this.createForActiveDocument(editor).refreshDecorations();
     }
 

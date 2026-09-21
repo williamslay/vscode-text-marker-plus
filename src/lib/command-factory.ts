@@ -1,6 +1,5 @@
 import ConfigStore from './config-store';
 import ConfigTargetPicker from './config-target-picker';
-import Debouncer from './debouncer';
 import DecorationOperatorFactory from './decoration/decoration-operator-factory';
 import DecorationRegistry from './decoration/decoration-registry';
 import DecorationPicker from './decoration/decoration-picker';
@@ -25,7 +24,6 @@ import {EventEmitter} from 'events';
 import {Logger} from './Logger';
 import {CommandLike} from './vscode/vscode';
 import AutoRefreshDecoration from './commands/auto-refresh-decoration';
-import AutoRefreshDecorationWithDelay from './commands/auto-refresh-decoration-with-delay';
 import {GoToNextHighlightCommand} from './commands/go-to-next-highlight';
 import {GoToPreviousHighlightCommand} from './commands/go-to-previous-highlight';
 import {AutoTriggerCommand} from './commands/command';
@@ -120,16 +118,6 @@ export default class CommandFactory {
     createAutoRefreshDecoration() {
         const command = new AutoRefreshDecoration(this.getDecorationOperatorFactory(), this.getWindowComponent());
         return this._wrapCommand(command);
-    }
-
-    createAutoRefreshDecorationWithDelay() {
-        const command = new AutoRefreshDecorationWithDelay(
-            this.getDecorationOperatorFactory(),
-            new Debouncer(this.getConfigStore()),
-            this.getWindowComponent(),
-            this.logger
-        );
-        return command;
     }
 
     private _wrapCommand(command: CommandLike) {
