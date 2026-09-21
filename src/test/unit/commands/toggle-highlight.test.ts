@@ -41,7 +41,7 @@ suite('ToggleHighlightCommand', () => {
 
     suite('When text is selected', () => {
 
-        test('it decorates a selected text if the cursor is not on highlight', () => {
+        test('it decorates a selected text if the cursor is not on highlight', async () => {
             const editor = mockMethods<TextEditor>(['setDecorations'], {
                 id: 'EDITOR_ID',
                 selectedText: 'SELECTED',
@@ -56,7 +56,7 @@ suite('ToggleHighlightCommand', () => {
                 decorationTypeRegistry,
                 mockType<WindowComponent>({visibleTextEditors: [editor]})
             );
-            command.execute(editor);
+            await command.execute(editor);
 
             verify(editor.setDecorations(decorationType, [{start: 4, end: 12}]));
         });

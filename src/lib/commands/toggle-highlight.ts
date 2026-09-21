@@ -60,7 +60,7 @@ export default class ToggleHighlightCommand implements CommandLike {
         if (!textEditor.selectedText) return false;
         const pattern = this.patternFactory.create({phrase: textEditor.selectedText});
         const decorationOperator = this.decorationOperatorFactory.createForVisibleEditors();
-        const changed = decorationOperator.addDecoration(pattern, undefined, true);
+        const changed = decorationOperator.addDecoration(pattern);
         if (changed) await decorationOperator.waitForFullRefresh();
         return changed;
     }
