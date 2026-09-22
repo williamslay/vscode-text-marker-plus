@@ -37,6 +37,39 @@ suite('StringPattern', () => {
         ]);
     });
 
+    test('it reports original offsets after a preceding capital dotted I in ignore-case mode', () => {
+        const pattern = new StringPattern({
+            phrase: 'istanbul',
+            ignoreCase: true
+        });
+        assert.deepEqual(pattern.locateIn('İstanbul: ISTANBUL istanbul'), [
+            {start: 10, end: 18},
+            {start: 19, end: 27}
+        ]);
+    });
+
+    test('it accumulates no offset drift after multiple capital dotted I characters', () => {
+        const pattern = new StringPattern({
+            phrase: 'hello',
+            ignoreCase: true
+        });
+        assert.deepEqual(pattern.locateIn('İİİ hello HELLO'), [
+            {start: 4, end: 9},
+            {start: 10, end: 15}
+        ]);
+    });
+
+    test('it preserves dotted I offsets for case-sensitive and regex matching', () => {
+        const text = 'İİİ hello HELLO';
+        assert.deepEqual(new StringPattern({phrase: 'hello'}).locateIn(text), [
+            {start: 4, end: 9}
+        ]);
+        assert.deepEqual(new RegexPattern({phrase: 'hello', ignoreCase: true}).locateIn(text), [
+            {start: 4, end: 9},
+            {start: 10, end: 15}
+        ]);
+    });
+
     test('it finds all matches with whole word search', () => {
         const pattern = new StringPattern({
             phrase: 'text',

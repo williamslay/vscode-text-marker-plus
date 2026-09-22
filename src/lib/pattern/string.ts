@@ -1,6 +1,12 @@
 import Pattern, {PatternParams} from './pattern';
 import {FlatRange} from '../vscode/flat-range';
 
+type ComparedText = {
+    readonly text: string;
+    readonly sourceStarts: readonly number[];
+    readonly sourceEnds: readonly number[];
+};
+
 export default class StringPattern extends Pattern {
 
     public type = 'String';
@@ -16,11 +22,11 @@ export default class StringPattern extends Pattern {
         const comparedText = this.getTextForComparison(text);
         const ranges: FlatRange[] = [];
         let searchOffset = 0;
-        let start = comparedText.indexOf(phrase, searchOffset);
+        let start = comparedText.text.indexOf(phrase, searchOffset);
         while (start !== -1) {
-            ranges.push({start, end: start + this.phrase.length});
+            ranges.push(this.getSourceRange(comparedText, start, phrase.length));
             searchOffset = start + phrase.length;
-            start = comparedText.indexOf(phrase, searchOffset);
+            start = comparedText.text.indexOf(phrase, searchOffset);
         }
         return ranges;
     }
@@ -29,8 +35,31 @@ export default class StringPattern extends Pattern {
         return this.ignoreCase ? this.phrase.toLowerCase() : this.phrase;
     }
 
-    private getTextForComparison(text: string) {
-        return this.ignoreCase ? text.toLowerCase() : text;
+    private getTextForComparison(text: string): ComparedText {
+        if (!this.ignoreCase) {
+            return {text, sourceStarts: [], sourceEnds: []};
+        }
+
+        const sourceStarts: number[] = [];
+        const sourceEnds: number[] = [];
+        let sourceOffset = 0;
+        for (const character of text) {
+            const comparedCharacter = character.toLowerCase();
+            for (let offset = 0; offset < comparedCharacter.length; offset += 1) {
+                sourceStarts.push(sourceOffset);
+                sourceEnds.push(sourceOffset + character.length);
+            }
+            sourceOffset += character.length;
+        }
+        return {text: text.toLowerCase(), sourceStarts, sourceEnds};
+    }
+
+    private getSourceRange(comparedText: ComparedText, start: number, length: number): FlatRange {
+        if (!this.ignoreCase) return {start, end: start + length};
+        return {
+            start: comparedText.sourceStarts[start],
+            end: comparedText.sourceEnds[start + length - 1]
+        };
     }
 
     protected create(params: PatternParams) {
