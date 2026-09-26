@@ -59,6 +59,16 @@ suite('AutoRefreshDecoration', () => {
         verify(decorationOperator.refreshDecorations());
     });
 
+    test('it refreshes the active editor when no editors are visible', () => {
+        const windowComponent = mockType<WindowComponent>({activeTextEditor: editor, visibleTextEditors: []});
+        const fallbackCommand = new AutoRefreshDecoration(decorationOperatorFactory, windowComponent);
+
+        fallbackCommand.refreshVisibleEditors();
+
+        verify(decorationOperatorFactory.create([editor]));
+        verify(decorationOperator.refreshDecorations(), {times: 1});
+    });
+
     test('it refreshes non-active visible editors too', () => {
         const otherEditor = {id: 'OTHER'} as TextEditor;
         const windowComponent = mockType<WindowComponent>({
