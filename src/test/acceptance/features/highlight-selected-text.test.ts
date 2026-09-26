@@ -86,4 +86,28 @@ suite('Highlight command', () => {
             new Range(new Position(0, 2), new Position(0, 6))
         ]));
     });
+
+    test('restores saved highlights with one startup render', async () => {
+        const editor = createFakeEditor({wholeText: 'A TEXT B'});
+        const startupVscode = createFakeVsCode({
+            editors: [editor],
+            savedHighlights: [{
+                pattern: {
+                    type: 'string',
+                    expression: 'TEXT',
+                    ignoreCase: false,
+                    wholeMatch: false
+                },
+                color: 'COLOUR_A'
+            }]
+        });
+        AppIntegrator.create(startupVscode, console).integrate(EXECUTION_CONTEXT);
+
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        const decorationType = 'DECORATION_TYPE_1' as unknown as TextEditorDecorationType;
+        verify(editor.setDecorations(decorationType, [
+            new Range(new Position(0, 2), new Position(0, 6))
+        ]), {times: 1});
+    });
 });
