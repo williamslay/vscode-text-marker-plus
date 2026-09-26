@@ -8,6 +8,20 @@ Known issues are tracked separately in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
 ## Unreleased
 
+## 1.0.7 - 2026-09-26
+
+### Changed
+
+- Restored saved highlights through the registry before one startup render to
+  avoid duplicate decoration work.
+- Reduced VSIX payload by excluding non-runtime `fp-ts` artifacts.
+
+### Fixed
+
+- Refreshed the active editor when VS Code has not populated its visible-editor
+  list during startup.
+- Corrected literal-match offsets for U+0130.
+
 ## 1.0.6 - 2026-09-21
 
 ### Changed
