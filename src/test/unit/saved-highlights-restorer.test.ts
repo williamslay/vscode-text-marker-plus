@@ -1,4 +1,4 @@
-import {mock, mockType, verify, when} from '../helpers/mock';
+import {any, mock, mockType, verify, when} from '../helpers/mock';
 import {Event} from '../../lib/const';
 import SavedHighlightsRestorer from '../../lib/saved-highlights-restorer';
 import ConfigStore from '../../lib/config-store';
@@ -23,6 +23,14 @@ suite('SavedHighlightsRestorer', () => {
                 wholeMatch: false
             },
             color: '#F7E4B3'
+        }, {
+            pattern: {
+                type: 'string',
+                expression: 'SECOND',
+                ignoreCase: true,
+                wholeMatch: true
+            },
+            color: '#98C379'
         }];
         const configStore = mockType<ConfigStore>({savedHighlights: savedDecorations});
         const decorationOperator = mock(DecorationOperator);
@@ -31,12 +39,19 @@ suite('SavedHighlightsRestorer', () => {
         new SavedHighlightsRestorer(configStore, decorationOperatorFactory, matchingModeRegistry, eventBus);
 
         eventBus.on(Event.EXTENSION_READY, () => {
-            verify(decorationOperator.addDecoration(new StringPattern({
+            verify(decorationOperator.registerDecoration(new StringPattern({
                 phrase: 'PHRASE',
                 ignoreCase: false,
                 wholeMatch: false
             }), '#F7E4B3'));
-            verify(decorationOperator.refreshDecorations());
+            verify(decorationOperator.registerDecoration(new StringPattern({
+                phrase: 'SECOND',
+                ignoreCase: true,
+                wholeMatch: true
+            }), '#98C379'));
+            verify(decorationOperator.registerDecoration(any(), any()), {times: 2});
+            verify(decorationOperator.addDecoration(any(), any()), {times: 0});
+            verify(decorationOperator.refreshDecorations(), {times: 0});
             done();
         });
 

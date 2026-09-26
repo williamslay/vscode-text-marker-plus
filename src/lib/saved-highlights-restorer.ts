@@ -35,14 +35,13 @@ export default class SavedHighlightsRestorer {
     private restore() {
         const decorationsData = this.configStore.savedHighlights;
         const decorationOperator = this.decorationOperatorFactory.createForVisibleEditors();
-        decorationsData.forEach(decorationData => this.addDecoration(decorationData, decorationOperator));
-        decorationOperator.refreshDecorations();
+        decorationsData.forEach(decorationData => this.registerDecoration(decorationData, decorationOperator));
     }
 
-    private addDecoration(decorationData: Highlight, decorationOperator: DecorationOperator) {
+    private registerDecoration(decorationData: Highlight, decorationOperator: DecorationOperator) {
         const patternData = this.decorationEntryParser.getPattern(decorationData);
         const pattern = this.patternFactory.create(patternData);
-        decorationOperator.addDecoration(pattern, decorationData.color);
+        decorationOperator.registerDecoration(pattern, decorationData.color);
     }
 
 }

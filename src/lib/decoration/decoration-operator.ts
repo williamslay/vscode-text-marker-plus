@@ -21,6 +21,16 @@ export default class DecorationOperator {
         this.fullRefresh = Promise.resolve();
     }
 
+    registerDecoration(pattern: Pattern, colour?: string): boolean {
+        return pipe(
+            this.decorationRegistry.issue(pattern, colour),
+            O.fold(
+                () => false,
+                () => true
+            )
+        );
+    }
+
     addDecoration(pattern: Pattern, colour?: string): boolean {
         return pipe(
             this.decorationRegistry.issue(pattern, colour),
