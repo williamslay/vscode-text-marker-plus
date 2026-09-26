@@ -34,3 +34,10 @@ src/**/*
 tsconfig.json
 yarn-error.log
 CONTRIBUTING.md
+
+# fp-ts runtime package does not need alternate module build, declarations, or package metadata.
+node_modules/fp-ts/es6/**
+node_modules/fp-ts/**/*.d.ts
+node_modules/fp-ts/**/package.json
+node_modules/fp-ts/README.md
+node_modules/fp-ts/CHANGELOG.md
