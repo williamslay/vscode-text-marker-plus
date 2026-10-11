@@ -6,7 +6,15 @@ project.
 
 Known issues are tracked separately in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
-## 1.0.8 - 2026-10-11
+## 1.0.9 - 2026-10-11
+
+Stable release of the Web platform support first published as pre-release
+1.0.8. The stable channel now resolves a manifest that carries the `browser`
+entry point, so the extension installs from the Marketplace in VS Code for the
+Web. VS Code for the Web evaluates the release version's manifest when
+installing, which is why pre-release 1.0.8 could not be installed there.
+
+## 1.0.8 - 2026-10-11 (pre-release)
 
 ### Added
 
