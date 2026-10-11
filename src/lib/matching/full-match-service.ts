@@ -1,6 +1,3 @@
-import * as path from 'path';
-import * as fs from 'fs';
-import {Worker} from 'worker_threads';
 import {FlatRange} from '../vscode/flat-range';
 import Pattern from '../pattern/pattern';
 import {matchText, WorkerPattern, WorkerRequest, WorkerResponse} from './worker-matcher';
@@ -96,7 +93,7 @@ export class FullMatchWorkerService implements FullMatchService {
     private cachedRangeCount: number;
     private disposed: boolean;
 
-    constructor(createWorker: () => MatchWorker = createDefaultWorker,
+    constructor(createWorker: () => MatchWorker,
                 options: FullMatchCacheOptions = {},
                 logger?: Logger) {
         this.createWorker = createWorker;
@@ -289,13 +286,6 @@ export class FullMatchWorkerService implements FullMatchService {
     private copyRanges(ranges: FlatRange[]): FlatRange[] {
         return ranges.map(range => ({start: range.start, end: range.end}));
     }
-}
-
-function createDefaultWorker(): MatchWorker {
-    const localPath = path.join(__dirname, 'full-match-worker.js');
-    const compiledPath = path.resolve(__dirname, '../../../out/lib/matching/full-match-worker.js');
-    const workerPath = fs.existsSync(localPath) ? localPath : compiledPath;
-    return new Worker(workerPath);
 }
 
 function isWorkerResponse(value: unknown): value is WorkerResponse {

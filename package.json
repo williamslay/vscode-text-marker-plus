@@ -15,7 +15,7 @@
     "url": "https://github.com/williamslay/vscode-text-marker-plus.git"
   },
   "engines": {
-    "vscode": "^1.51.0"
+    "vscode": "^1.74.0"
   },
   "categories": [
     "Other"
@@ -29,6 +29,13 @@
     "*"
   ],
   "main": "./out/extension",
+  "browser": "./out/web/extension.js",
+  "capabilities": {
+    "virtualWorkspaces": true,
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
   "contributes": {
     "configuration": {
       "type": "object",
@@ -191,19 +198,18 @@
           }
         },
         "textmarker.defaultSaveTarget": {
-          "description": "Where to save highlights by default",
+          "description": "Where to save highlights by default. Any other value is treated as workspace",
           "type": "string",
           "enum": [
             "workspace",
-            "global",
-            "prompt"
+            "global"
           ],
           "default": "workspace"
         },
         "textmarker.autoSaveOnToggle": {
           "description": "Automatically save highlights after Toggle Highlight changes them",
           "type": "boolean",
-          "default": false
+          "default": true
         }
       }
     },
@@ -325,11 +331,15 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "yarn run compile",
+    "vscode:prepublish": "yarn run compile && yarn run build-web",
     "coverage": "nyc mocha 'src/test/**/*.ts'",
     "compile": "tsc -p ./",
+    "build-web": "esbuild src/extension-web.ts --bundle --outfile=out/web/extension.js --format=cjs --platform=browser --target=es2020 --external:vscode --conditions=browser",
+    "build-web-test": "esbuild src/test/web/index.ts --bundle --outfile=out/web/test.js --format=cjs --platform=browser --target=es2020 --external:vscode --conditions=browser",
+    "web-test": "vscode-test-web --browser chromium --headless --extensionDevelopmentPath . --extensionTestsPath out/web/test.js --port 3001 src/test/web/fixtures",
+    "web-test-serve": "vscode-test-web --browser none --extensionDevelopmentPath . --port 3001 src/test/web/fixtures",
     "lint": "eslint .",
-    "check": "yarn run compile && yarn run lint && yarn test",
+    "check": "yarn run compile && yarn run build-web && yarn run build-web-test && yarn run lint && yarn test",
     "watch": "tsc -watch -p ./",
     "test": "mocha 'src/test/**/*.ts'",
     "unit-test": "mocha 'src/test/unit/**/*.ts'",
@@ -339,12 +349,15 @@
   "devDependencies": {
     "@types/mocha": "^8.0.4",
     "@types/node": "22.20.3",
-    "@types/vscode": "1.51.0",
+    "@types/vscode": "1.74.0",
     "@typescript-eslint/eslint-plugin": "8.70.0",
     "@typescript-eslint/parser": "8.70.0",
+    "@vscode/test-web": "^0.0.81",
     "@vscode/vsce": "4.0.0",
     "codeclimate-test-reporter": "^0.5.1",
+    "esbuild": "^0.28.2",
     "eslint": "10.10.0",
+    "events": "^3.3.0",
     "mocha": "^8.2.1",
     "nyc": "^15.1.0",
     "testdouble": "^3.13.1",

@@ -1,5 +1,6 @@
 .vscode/**/*
 .vscode-test/**/*
+.vscode-test-web/**/*
 .codegraph
 .omo/**/*
 AGENTS.md
@@ -29,6 +30,8 @@ __*/**/*
 *.vsix
 eslint.config.js
 out/test/**
+out/web/test.js
+out/extension-web.js
 out/**/*.map
 src/**/*
 tsconfig.json

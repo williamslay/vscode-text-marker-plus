@@ -1,5 +1,6 @@
 import * as Const from './const';
 import CommandFactory from './command-factory';
+import {FullMatchService} from './matching/full-match-service';
 import {ExtensionContextLike} from './vscode/vscode';
 import {Logger} from './Logger';
 import CommandComponent, {CommandItem} from './vscode/command';
@@ -9,8 +10,8 @@ export default class AppIntegrator {
     private readonly vscode: any;
     private readonly commandComponent: CommandComponent;
 
-    static create(vscode: any, logger: Logger) {
-        const commandFactory = new CommandFactory(vscode, logger);
+    static create(vscode: any, logger: Logger, createMatchService?: () => FullMatchService) {
+        const commandFactory = new CommandFactory(vscode, logger, createMatchService);
         const commandComponent = new CommandComponent(vscode.commands, logger);
         return new AppIntegrator(commandFactory, vscode, commandComponent);
     }

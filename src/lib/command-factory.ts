@@ -1,5 +1,4 @@
 import ConfigStore from './config-store';
-import ConfigTargetPicker from './config-target-picker';
 import DecorationOperatorFactory from './decoration/decoration-operator-factory';
 import DecorationRegistry from './decoration/decoration-registry';
 import DecorationPicker from './decoration/decoration-picker';
@@ -28,7 +27,7 @@ import {GoToNextHighlightCommand} from './commands/go-to-next-highlight';
 import {GoToPreviousHighlightCommand} from './commands/go-to-previous-highlight';
 import {AutoTriggerCommand} from './commands/command';
 import {DecorationTypeRegistry} from './decoration/decoration-type-registry';
-import {FullMatchWorkerService} from './matching/full-match-service';
+import {FullMatchService, InlineMatchService} from './matching/full-match-service';
 
 const {v4: generateUuid} = require('uuid');
 const BASE_STATUS_BAR_PRIORITY = 100;
@@ -39,18 +38,19 @@ export default class CommandFactory {
     private eventBus?: EventEmitter;
     private decorationOperatorFactory?: DecorationOperatorFactory;
     private configStore?: ConfigStore;
-    private configTargetPicker?: ConfigTargetPicker;
     private decorationRegistry?: DecorationRegistry;
     private decorationPicker?: DecorationPicker;
     private matchingModeRegistry?: MatchingModeRegistry;
     private textLocationRegistry?: TextLocationRegistry;
     private windowComponent?: WindowComponent;
     private decorationTypeRegistry?: DecorationTypeRegistry;
-    private fullMatchService?: FullMatchWorkerService;
+    private fullMatchService?: FullMatchService;
+    private readonly createMatchService?: () => FullMatchService;
 
-    constructor(vscode: any, logger: Logger) {
+    constructor(vscode: any, logger: Logger, createMatchService?: () => FullMatchService) {
         this.vscode = vscode;
         this.logger = logger;
+        this.createMatchService = createMatchService;
     }
 
     createToggleHighlightCommand() {
@@ -75,11 +75,11 @@ export default class CommandFactory {
     }
 
     createRemoveAllHighlightsCommand() {
-        return new RemoveAllHighlightsCommand(this.getDecorationOperatorFactory());
+        return new RemoveAllHighlightsCommand(this.getDecorationOperatorFactory(), this.getConfigStore());
     }
 
     createSaveAllHighlightsCommand() {
-        return new SaveAllHighlightsCommand(this.getConfigStore(), this.getDecorationRegistry());
+        return new SaveAllHighlightsCommand(this.getConfigStore(), this.getDecorationRegistry(), this.getWindowComponent());
     }
 
     createToggleCaseSensitivityCommand() {
@@ -160,16 +160,11 @@ export default class CommandFactory {
     }
 
     private createConfigStore() {
-        return new ConfigStore(this.vscode.workspace, this.getConfigTargetPicker());
+        return new ConfigStore(this.vscode.workspace, this.isVscodeWebHost());
     }
 
-    private getConfigTargetPicker() {
-        this.configTargetPicker = this.configTargetPicker || this.createConfigTargetPicker();
-        return this.configTargetPicker;
-    }
-
-    private createConfigTargetPicker() {
-        return new ConfigTargetPicker(this.getWindowComponent());
+    private isVscodeWebHost() {
+        return this.vscode.env?.uiKind === this.vscode.UIKind?.Web;
     }
 
     private getDecorationRegistry() {
@@ -197,8 +192,9 @@ export default class CommandFactory {
         if (this.fullMatchService) this.fullMatchService.dispose();
     }
 
-    private getFullMatchService(): FullMatchWorkerService {
-        this.fullMatchService = this.fullMatchService || new FullMatchWorkerService(undefined, {}, this.logger);
+    getFullMatchService(): FullMatchService {
+        this.fullMatchService = this.fullMatchService ||
+                (this.createMatchService ? this.createMatchService() : new InlineMatchService());
         return this.fullMatchService;
     }
 
