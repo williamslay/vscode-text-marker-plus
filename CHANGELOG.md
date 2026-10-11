@@ -8,6 +8,48 @@ Known issues are tracked separately in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
 ## Unreleased
 
+### Added
+
+- Support for the VS Code Web platform through a bundled `browser` entry point,
+  with virtual and untrusted workspace support.
+- Full-document matching in the extension host on Web, since Web hosts have no
+  worker threads. It has no result cache yet.
+- `yarn run build-web` to bundle the Web entry point with esbuild, run by
+  `vscode:prepublish`.
+- `yarn run web-test` to run `src/test/web/` in headless browser VS Code through
+  `@vscode/test-web`, and `yarn run web-test-serve` for manual checks.
+- Pre-release publishing: a `v*-pre` tag publishes the build to the Marketplace
+  as a pre-release version, and `tag-release.sh --pre` creates that tag.
+- Resolution of the `workspace` save target to Global settings on the Web host
+  when the open folder is a virtual file system, so highlights survive a reload.
+
+### Changed
+
+- `textmarker.autoSaveOnToggle` now defaults to `true` again, so toggling a
+  highlight persists rules immediately as it did before 1.0.1.
+- Raised the minimum supported VS Code version from 1.51.0 to 1.74.0, and pinned
+  `@types/vscode` to the same floor.
+- **Clear All Highlights** now persists the cleared rules in the settings scope
+  that owns them, since VS Code replaces array settings across scopes.
+- **Save All Highlights** now reports a failed settings write instead of failing
+  silently.
+- Moved worker creation into `src/lib/matching/node-match-worker.ts` to keep
+  Node builtins out of the Web bundle.
+- CI skips the Playwright browser download, which only `web-test` needs.
+- `tag-release.sh` now requires the `master` branch and a clean working tree,
+  and pushes `master` before tagging.
+- Excluded the bundled Web test entry from the VSIX, and `.vscode-test-web/`
+  from Git and ESLint.
+- Documented which settings file each save target writes, including the
+  Remote-SSH and WSL case, the scope precedence order, and per-repository rules
+  on a virtual workspace.
+
+### Removed
+
+- `textmarker.defaultSaveTarget` option `prompt` and its quick pick. An
+  unrecognised value is treated as `workspace`, and the `workspace` target
+  writes Global settings when no folder is open.
+
 ## 1.0.7 - 2026-09-26
 
 ### Changed

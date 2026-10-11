@@ -4,10 +4,10 @@ This is an independently maintained distribution derived from
 [ryu1kn/vscode-text-marker](https://github.com/ryu1kn/vscode-text-marker).
 It is a community-maintained continuation branch: it preserves the original
 Text Marker behavior while adding configurable save targets, optional automatic
-saving after **Toggle Highlight**, and ongoing compatibility and performance
-fixes.
+saving after **Toggle Highlight**, support for the VS Code Web platform, and
+ongoing compatibility and performance fixes.
 
-And the extention can be installed from the the [market](https://marketplace.visualstudio.com/items?itemName=Williamslay.text-marker-Plus).
+And the extension can be installed from the [market](https://marketplace.visualstudio.com/items?itemName=Williamslay.text-marker-Plus).
 
 ## Differences from Upstream
 
@@ -22,9 +22,14 @@ currently differs from the original plugin in these areas:
 - Highlights refresh in every currently **visible** editor pane, including split
   panes that do not have focus. Tabs that are open but not visible refresh when
   they become visible.
-- Added `textmarker.defaultSaveTarget` with Workspace, Global, and Prompt
-  save modes.
+- Runs on the VS Code Web platform, so it activates in vscode.dev and github.dev
+  as well as on the desktop. This raises the minimum supported VS Code version
+  to 1.74.0. See [VS Code Web](#vs-code-web).
+- Added `textmarker.defaultSaveTarget` with Workspace and Global save modes.
 - Added optional `textmarker.autoSaveOnToggle` persistence.
+- **Clear All Highlights** persists the cleared rules instead of only emptying
+  the in-memory list, and a failed settings write is reported instead of failing
+  silently.
 - Added optional user-defined highlight colors through `textmarker.userColor`
   and `textmarker.useUserColor`.
 - Uses the One Half Dark accent palette by default.
@@ -69,7 +74,8 @@ currently differs from the original plugin in these areas:
 - Update existing highlight rules.
 - Jump to the next or previous occurrence of the same highlight rule.
 - Configure highlight colors, opacity, ruler colors, and status-bar buttons.
-- Save highlights and restore them when an editor opens, and can choose the saving place.
+- Save highlights and restore them when an editor opens, in the Workspace or
+  Global settings selected by `textmarker.defaultSaveTarget`.
 - Optionally save all highlights whenever **Toggle Highlight** adds or removes
   a rule.
 
@@ -97,17 +103,49 @@ available from the editor context menu where configured.
 
 Saved rules are stored in `textmarker.savedHighlights`.
 
-`textmarker.defaultSaveTarget` controls where **Save All Highlights** writes:
+`textmarker.defaultSaveTarget` controls where **Save All Highlights** writes.
+The two names are relative to different things:
 
-- `workspace` (default): current Workspace settings.
-- `global`: User/Global settings.
-- `prompt`: show the original Workspace/Global selection prompt.
+- `workspace` (default): relative to the **project** you have open. A single
+  folder writes `<folder>/.vscode/settings.json`; a multi-root workspace writes
+  the `"settings"` section of its `.code-workspace` file. Rules saved here
+  apply to that project only. In a Remote-SSH or WSL window that file lives on
+  the remote machine.
+- `global`: relative to the **environment** you work in, not to the repository,
+  and not shared between different environments. Which file that is depends on
+  the kind of window; see
+  [Which File `global` Writes](#which-file-global-writes).
 
-If `workspace` is selected while no Workspace is open, the extension falls
-back to the selection prompt instead of silently writing to Global settings.
-This also works with multi-root Workspaces.
+`textmarker.defaultSaveTarget` accepts only `workspace` and `global`. A value
+it does not recognise, for example `prompt` left over from an older version, is
+treated as `workspace`. When the `workspace` target is set and no folder is
+open, the extension writes Global settings rather than prompting. Multi-root
+Workspaces write the `"settings"` section of the `.code-workspace` file.
 
-Set `textmarker.autoSaveOnToggle` to `true` to combine toggling and saving:
+### Which File `global` Writes
+
+- Local desktop window: your user settings file, which is
+  `%APPDATA%\Code\User\settings.json` on Windows,
+  `~/.config/Code/User/settings.json` on Linux, or
+  `~/Library/Application Support/Code/User/settings.json` on macOS. An active
+  profile uses `.../User/profiles/<profile>/settings.json` instead. Rules then
+  apply to every folder you open in that VS Code install.
+- Remote-SSH or WSL window: `~/.vscode-server/data/Machine/settings.json` on the
+  remote server, as soon as `textmarker.savedHighlights` has a value there.
+  Rules then apply to every folder you open through that server. That remote
+  value also wins over the local user settings file, which is why a saved
+  highlight can look when you only check the local file. Open it with
+  **Preferences: Open Remote Settings (JSON)**.
+- vscode.dev or github.dev: `vscode-userdata:/User/settings.json` in the browser
+  profile, so rules apply to every repository you open in that browser. See
+  [VS Code Web](#vs-code-web).
+
+A narrower scope always wins over a wider one, in this order: the folder's
+`.vscode/settings.json`, the workspace or `.code-workspace` settings, the remote
+machine settings, your local user settings, then the extension defaults.
+
+`textmarker.autoSaveOnToggle` is enabled by default, so `textmarker.toggleHighlight`
+saves all current rules right after it changes the highlight:
 
 ```json
 {
@@ -116,9 +154,54 @@ Set `textmarker.autoSaveOnToggle` to `true` to combine toggling and saving:
 }
 ```
 
-With this configuration, running `textmarker.toggleHighlight` updates the
-visual highlight and immediately saves all current rules to Workspace settings.
-Set `defaultSaveTarget` to `global` or `prompt` for different save behavior.
+Set it to `false` to keep saving manual, then run **TextMarker: Save All
+Highlights** from the Command Palette. Set `defaultSaveTarget` to `global` for
+different save behavior.
+
+## VS Code Web
+
+The extension also runs in web VS Code, such as vscode.dev and github.dev. There
+the full-document matching runs inside the extension host, because the web host
+provides no Node.js worker threads.
+
+Save targets are adjusted for the web host:
+
+- On a virtual workspace such as github.dev, the `workspace` target writes
+  `.vscode/settings.json` through the virtual file system. That write is an
+  uncommitted browser-session change and its content is lost on
+  `Developer: Reload Window`, so the extension stores highlights in Global
+  settings instead. Global settings live in the browser profile and survive
+  reloads.
+- When the web host has a folder from your own machine, the `workspace` target
+  keeps using Workspace settings, because that file system is durable.
+- `global` behaves as on the desktop.
+
+Global settings belong to the browser profile, so rules saved in one repository
+also appear in the other repositories you open in that same browser. Two ways to
+keep the rules of one repository on their own:
+
+- Create a profile for that repository. Web VS Code associates a profile with
+  the current folder or workspace, so its `textmarker.savedHighlights` entry
+  lives in that profile's settings file. Profile syncing is not available on
+  the web.
+- Add the `textmarker.savedHighlights` entry to `.vscode/settings.json` yourself
+  and commit it. The commit is what makes the write durable, because an
+  uncommitted change in a virtual workspace is not restored after a reload.
+
+On the web that profile file is `vscode-userdata:/User/settings.json`, backed by
+IndexedDB for the `vscode.dev` or `github.dev` origin. Nothing is written to
+GitHub servers, so a saved rule costs no repository change and no API call. Open
+it with **Preferences: Open User Settings (JSON)**, or clear rules with **Clear
+All Highlights**, which saves the cleared list for you. It removes the saved
+rules from the scope that currently provides them, the folder's
+`.vscode/settings.json` or the User settings on the web, so rules kept in a
+different scope remain until you clear them there.
+
+Saved rules are never pruned automatically: a rule whose text no longer exists
+stays until you remove it.
+
+The extension reads editor text and settings only. It declares support for both
+virtual workspaces and untrusted workspaces.
 
 ## Other Settings
 
@@ -132,7 +215,9 @@ Set `defaultSaveTarget` to `global` or `prompt` for different save behavior.
 
 The default highlight palette follows the [One Half Dark](https://github.com/sonph/onehalf) accent colors, with several additional colors:
 
-![Highlight palette](images/palette.png)
+<p align="left">
+  <img src="https://raw.githubusercontent.com/williamslay/vscode-text-marker-plus/master/images/palette.png">
+</p>
 
 When `textmarker.useUserColor` is enabled, colors from `textmarker.userColor`
 are assigned after these colors. When the combined color set is exhausted,
