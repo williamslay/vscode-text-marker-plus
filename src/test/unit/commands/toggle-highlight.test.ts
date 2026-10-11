@@ -217,7 +217,7 @@ suite('ToggleHighlightCommand', () => {
         verify(saveCommand.execute(), {times: 0});
     });
 
-    test('it saves to workspace without prompting when auto-save is enabled', async () => {
+    test('it saves to workspace settings when auto-save is enabled', async () => {
         const editor = mockMethods<TextEditor>(['setDecorations'], {
             id: 'EDITOR_ID',
             selectedText: 'SELECTED',
@@ -230,9 +230,10 @@ suite('ToggleHighlightCommand', () => {
         when(extensionConfig.get('autoSaveOnToggle')).thenReturn(true);
         const workspace = mockMethods<any>(['getConfiguration'], {workspaceFolders: [{}]});
         when(workspace.getConfiguration('textmarker')).thenReturn(extensionConfig);
-        const configTargetPicker = mockMethods<any>(['pick']);
-        const configStore = new ConfigStore(workspace, configTargetPicker);
-        const saveCommand = new SaveAllHighlightsCommand(configStore, decorationRegistry);
+        const configStore = new ConfigStore(workspace);
+        const saveWindow = mockMethods<WindowComponent>(['showErrorMessage', 'showInformationMessage']);
+        when(saveWindow.showInformationMessage(any())).thenReturn(task.of('OK'));
+        const saveCommand = new SaveAllHighlightsCommand(configStore, decorationRegistry, saveWindow);
         when(decorationRegistry.retrieveAll()).thenReturn([]);
         const command = new ToggleHighlightCommand(
             matchingModeRegistry,
@@ -246,7 +247,6 @@ suite('ToggleHighlightCommand', () => {
 
         await command.execute(editor);
 
-        verify(configTargetPicker.pick(), {times: 0});
         verify(extensionConfig.update('savedHighlights', [], vscode.ConfigurationTarget.Workspace));
     });
 });

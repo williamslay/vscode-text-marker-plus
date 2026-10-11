@@ -4,7 +4,7 @@
 import {Position, Range, Selection} from 'vscode';
 
 const mockVscode = {
-    ConfigurationTarget: {Global: 1, Workspace: 2},
+    ConfigurationTarget: {Global: 1, Workspace: 2, WorkspaceFolder: 3},
     OverviewRulerLane: {Center: 2},
     StatusBarAlignment: {Right: 2},
     TextEditorRevealType: {InCenterIfOutsideViewport: 2},

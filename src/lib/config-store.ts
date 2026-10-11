@@ -2,19 +2,18 @@ import * as O from 'fp-ts/lib/Option';
 import {getOptionM} from 'fp-ts/lib/OptionT';
 import {task, Task} from 'fp-ts/lib/Task';
 import * as vscode from 'vscode';
-import ConfigurationTargetPicker from './config-target-picker';
 import * as Const from './const';
 import {Highlight} from './entities/highlight';
 
-export type SaveTarget = 'workspace' | 'global' | 'prompt';
+export type SaveTarget = 'workspace' | 'global';
 
 export default class ConfigStore {
     private readonly workspace: typeof vscode.workspace;
-    private readonly configTargetPicker: ConfigurationTargetPicker;
+    private readonly isWebHost: boolean;
 
-    constructor(workspace: typeof vscode.workspace, configTargetPicker: ConfigurationTargetPicker) {
+    constructor(workspace: typeof vscode.workspace, isWebHost = false) {
         this.workspace = workspace;
-        this.configTargetPicker = configTargetPicker;
+        this.isWebHost = isWebHost;
     }
 
     get highlightColors() {
@@ -30,7 +29,7 @@ export default class ConfigStore {
     }
 
     get defaultHighlightOpacity() {
-        return this.get<string>('defaultHighlightOpacity');
+        return this.get<number>('defaultHighlightOpacity');
     }
 
     get savedHighlights() {
@@ -70,9 +69,19 @@ export default class ConfigStore {
         return extensionConfig.get(configName) as T;
     }
 
-    // TODO: Move this to WorkspaceAdaptor
     set(configName: string, configValue: any): Task<O.Option<never>> {
         return getOptionM(task).chain(this.resolveSaveTarget(), target => {
+            const extensionConfig = this.workspace.getConfiguration(Const.EXTENSION_ID);
+            return () => extensionConfig.update(configName, configValue, target) as Promise<O.Option<never>>;
+        });
+    }
+
+    // Writes to the configuration scope that actually owns the value, instead of the scope
+    // chosen by `defaultSaveTarget`. VS Code replaces array-valued settings across scopes
+    // rather than merging them, so writing to a scope that does not hold the value only
+    // masks the rules that live somewhere else.
+    setInOwningScope(configName: string, configValue: any): Task<O.Option<never>> {
+        return getOptionM(task).chain(this.resolveOwningScope(configName), target => {
             const extensionConfig = this.workspace.getConfiguration(Const.EXTENSION_ID);
             return () => extensionConfig.update(configName, configValue, target) as Promise<O.Option<never>>;
         });
@@ -83,12 +92,37 @@ export default class ConfigStore {
             case 'global':
                 return task.of(O.some(vscode.ConfigurationTarget.Global));
             case 'workspace':
-                return this.workspace.workspaceFolders && this.workspace.workspaceFolders.length > 0 ?
-                    task.of(O.some(vscode.ConfigurationTarget.Workspace)) :
-                    this.configTargetPicker.pick();
-            case 'prompt':
-            default:
-                return this.configTargetPicker.pick();
+            // A legacy or invalid value, for example "prompt" stored by an older
+            // version, is handled the same way as `workspace`.
+            default: {
+                const workspaceFolders = this.workspace.workspaceFolders;
+                if (!workspaceFolders || workspaceFolders.length === 0) {
+                    return task.of(O.some(vscode.ConfigurationTarget.Global));
+                }
+                if (this.isWebHost && !this.hasDiskBackedWorkspace(workspaceFolders)) {
+                    // A virtual workspace (for example vscode-vfs on vscode.dev) keeps a
+                    // workspace settings write as an uncommitted change in browser storage,
+                    // which is lost on window reload. Global settings live in the browser
+                    // profile, so use them to keep highlights across reloads.
+                    return task.of(O.some(vscode.ConfigurationTarget.Global));
+                }
+                return task.of(O.some(vscode.ConfigurationTarget.Workspace));
+            }
         }
+    }
+
+    private resolveOwningScope(configName: string): Task<O.Option<vscode.ConfigurationTarget>> {
+        const inspected = this.workspace.getConfiguration(Const.EXTENSION_ID).inspect(configName);
+        if (!inspected) return task.of(O.none);
+        if (inspected.workspaceFolderValue !== undefined) return task.of(O.some(vscode.ConfigurationTarget.WorkspaceFolder));
+        if (inspected.workspaceValue !== undefined) return task.of(O.some(vscode.ConfigurationTarget.Workspace));
+        if (inspected.globalValue !== undefined) return task.of(O.some(vscode.ConfigurationTarget.Global));
+        // Nothing was saved by the user, only the declared default exists. Writing here
+        // would add an empty entry to settings that has nothing to clear.
+        return task.of(O.none);
+    }
+
+    private hasDiskBackedWorkspace(workspaceFolders: readonly vscode.WorkspaceFolder[]): boolean {
+        return workspaceFolders.every(folder => folder.uri.scheme === 'file');
     }
 }
