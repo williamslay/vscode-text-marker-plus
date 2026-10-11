@@ -6,7 +6,7 @@ project.
 
 Known issues are tracked separately in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
-## Unreleased
+## 1.0.8 - 2026-10-11
 
 ### Added
 
