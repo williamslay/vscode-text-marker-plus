@@ -1,0 +1,13 @@
+{
+    "textmarker.defaultSaveTarget": "global",
+    "textmarker.savedHighlights": [
+        {
+            "pattern": {
+                "type": "string",
+                "expression": "Zephyr",
+                "ignoreCase": false,
+                "wholeMatch": false
+            }
+        }
+    ]
+}

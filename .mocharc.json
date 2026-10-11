@@ -1,5 +1,6 @@
 {
   "recursive": true,
   "ui": "tdd",
+  "ignore": ["src/test/web/**"],
   "require": ["ts-node/register", "src/test/stub-vscode.ts"]
 }
